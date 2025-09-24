@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepWiki ReAct 流程 - LLM调用记录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .summary-item h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .iteration {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .iteration-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .iteration-header h2 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .iteration-header .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .iteration-content {
+            padding: 25px;
+        }
+
+        .input-output {
+            margin-bottom: 25px;
+        }
+
+        .input-output h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-output h3::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .input-section h4 {
+            color: #28a745;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .output-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .output-section h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .context-block {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .conversation-history {
+            background: #f3e5f5;
+            border: 1px solid #ce93d8;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 5px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 DeepWiki ReAct 流程</h1>
+            <p>LLM调用详细记录 - 5轮迭代完整分析</p>
+        </div>
+
+        <div class="summary-card">
+            <h2>📊 流程概览</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <h3>项目路径</h3>
+                    <p>/Users/lvzheng/cursor/deepwiki-open/test_project</p>
+                </div>
+                <div class="summary-item">
+                    <h3>总轮次</h3>
+                    <p>5轮迭代</p>
+                </div>
+                <div class="summary-item">
+                    <h3>LLM调用</h3>
+                    <p>5次完整调用</p>
+                </div>
+                <div class="summary-item">
+                    <h3>分析深度</h3>
+                    <p>从概览到完整文档</p>
+                </div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">迭代轮次</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">LLM调用</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">研究计划</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">研究更新</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">最终结论</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第1轮：研究计划 -->
+        <div class="iteration">
+            <div class="iteration-header">
+                <h2>第1轮：研究计划</h2>
+                <div class="subtitle">Research Plan - 建立分析框架</div>
+            </div>
+            <div class="iteration-content">
+                <div class="input-output">
+                    <h3>📥 LLM输入</h3>
+                    <div class="input-section">
+                        <h4>系统提示词</h4>
+                        <div class="code-block">You are an expert software engineer and technical writer. Your task is to analyze a GitHub repository and create a comprehensive wiki structure.
+
+**IMPORTANT INSTRUCTIONS:**
+1. **Language Detection**: Detect the primary programming language(s) used in the repository
+2. **Markdown Formatting**: Use proper markdown syntax with headers, code blocks, and lists
+3. **Structured Thinking**: Organize your analysis into clear sections
+4. **Code Examples**: Include relevant code snippets when explaining functionality
+5. **Architecture Overview**: Provide a high-level view of the system architecture
+
+**Your Response Format:**
+- Start with a brief repository overview
+- Identify key components and their relationships
+- Suggest a wiki structure with main sections
+- Highlight important files and their purposes
+- Note any patterns or architectural decisions
+
+Remember: Focus on creating a research plan for comprehensive analysis, not the final wiki content.</div>
+                    </div>
+                    
+                    <div class="input-section">
+                        <h4>RAG上下文</h4>
+                        <div class="context-block">&lt;context&gt;
+&lt;file path="src/main.py"&gt;
+def main():
+    print("Hello, World!")
+    user = create_user("Alice", 25)
+    print(f"Created user: {user.name}")
+
+def create_user(name, age):
+    from models.user import User
+    return User(name, age)
+&lt;/file&gt;
+
+&lt;file path="src/models/user.py"&gt;
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def get_info(self):
+        return f"{self.name}, {self.age} years old"
+&lt;/file&gt;
+&lt;/context&gt;</div>
+                    </div>
+                    
+                    <div class="input-section">
+                        <h4>用户消息</h4>
+                        <div class="code-block">Analyze this GitHub repository test_project and create a wiki structure that covers:
+
+1. **Project Overview**: Purpose, main features, and key technologies
+2. **Architecture**: System design, components, and data flow
+3. **Code Structure**: Directory organization and file purposes
+4. **API Documentation**: Function signatures, parameters, and return values
+5. **Usage Examples**: How to use the main features
+6. **Development Guide**: Setup, testing, and contribution guidelines
+
+**File Tree:**
+```
+test_project/
+├── README.md
+├── src/
+│   ├── main.py
+│   ├── utils.py
+│   └── models/
+│       └── user.py
+├── tests/
+│   └── test_main.py
+└── requirements.txt
+```
+
+**README Content:**
+# Test Project
+这是一个简单的Python项目，用于演示用户管理功能。
+## 功能特性
+- 用户创建和管理
+- 数据验证
+- 单元测试
+## 安装
+pip install -r requirements.txt
+## 运行
+python src/main.py</div>
+                    </div>
+                </div>
+
+                <div class="input-output">
+                    <h3>📤 LLM输出</h3>
+                    <div class="output-section">
+                        <h4>研究计划</h4>
+                        <div class="code-block"># Research Plan for test_project
+
+## Repository Overview
+This is a Python-based user management system with a clean, modular architecture. The project demonstrates basic object-oriented programming principles and includes testing infrastructure.
+
+## Key Components Analysis
+
+### 1. Core Architecture
+- **Entry Point**: `src/main.py` - Contains the main application logic
+- **Data Models**: `src/models/user.py` - Defines the User class with basic properties
+- **Utilities**: `src/utils.py` - Provides validation and formatting functions
+- **Testing**: `tests/test_main.py` - Unit tests for core functionality
+
+### 2. Technology Stack
+- **Language**: Python 3.x
+- **Dependencies**: requests, pytest, flask (from requirements.txt)
+- **Testing Framework**: unittest/pytest
+
+### 3. Suggested Wiki Structure
+
+#### A. Project Overview
+- Purpose and goals
+- Key features
+- Technology stack
+- Installation and setup
+
+#### B. Architecture Documentation
+- System design overview
+- Component relationships
+- Data flow diagrams
+- Module dependencies
+
+#### C. Code Documentation
+- API reference for all modules
+- Function signatures and parameters
+- Usage examples
+- Code patterns and conventions
+
+#### D. Development Guide
+- Setup instructions
+- Testing procedures
+- Contribution guidelines
+- Code style standards
+
+## Research Focus Areas
+1. **User Model Analysis**: Understanding the User class structure and methods
+2. **Main Application Flow**: Tracing the execution path from main() to user creation
+3. **Utility Functions**: Examining validation and formatting logic
+4. **Test Coverage**: Analyzing test cases and coverage areas
+5. **Dependency Management**: Understanding external library usage
+
+## Next Steps
+- Deep dive into each component's implementation
+- Analyze code patterns and best practices
+- Document API interfaces and usage examples
+- Create comprehensive usage documentation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第2轮：研究更新 -->
+        <div class="iteration">
+            <div class="iteration-header">
+                <h2>第2轮：研究更新</h2>
+                <div class="subtitle">Research Update - 详细组件分析</div>
+            </div>
+            <div class="iteration-content">
+                <div class="input-output">
+                    <h3>📥 LLM输入</h3>
+                    <div class="input-section">
+                        <h4>对话历史</h4>
+                        <div class="conversation-history">&lt;conversation_history&gt;
+&lt;user&gt;Analyze this GitHub repository test_project and create a wiki structure...&lt;/user&gt;
+&lt;assistant&gt;# Research Plan for test_project
+[第1轮完整输出内容]
+&lt;/assistant&gt;
+&lt;/conversation_history&gt;</div>
+                    </div>
+                    
+                    <div class="input-section">
+                        <h4>更新的RAG上下文</h4>
+                        <div class="context-block">&lt;context&gt;
+&lt;file path="src/utils.py"&gt;
+def validate_user(user):
+    if not user.name:
+        return False
+    if user.age &lt; 0 or user.age &gt; 150:
+        return False
+    return True
+
+def format_user_info(user):
+    return f"User: {user.name} (Age: {user.age})"
+&lt;/file&gt;
+
+&lt;file path="tests/test_main.py"&gt;
+import unittest
+from src.main import create_user
+from src.models.user import User
+
+class TestMain(unittest.TestCase):
+    def test_create_user(self):
+        user = create_user("Bob", 30)
+        self.assertIsInstance(user, User)
+        self.assertEqual(user.name, "Bob")
+        self.assertEqual(user.age, 30)
+&lt;/file&gt;
+&lt;/context&gt;</div>
+                    </div>
+                </div>
+
+                <div class="input-output">
+                    <h3>📤 LLM输出</h3>
+                    <div class="output-section">
+                        <h4>详细组件分析</h4>
+                        <div class="code-block"># Research Update: Detailed Component Analysis
+
+## Deep Dive into Core Components
+
+### 1. User Model Analysis (`src/models/user.py`)
+The User class represents the core data model with the following characteristics:
+
+```python
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def get_info(self):
+        return f"{self.name}, {self.age} years old"
+```
+
+**Key Observations:**
+- Simple data class with two properties: name and age
+- Includes a utility method `get_info()` for formatted output
+- No validation logic in the model itself (separation of concerns)
+- Follows Python naming conventions
+
+### 2. Utility Functions Analysis (`src/utils.py`)
+The utility module provides two key functions:
+
+```python
+def validate_user(user):
+    if not user.name:
+        return False
+    if user.age < 0 or user.age > 150:
+        return False
+    return True
+
+def format_user_info(user):
+    return f"User: {user.name} (Age: {user.age})"
+```
+
+**Architectural Patterns:**
+- **Separation of Concerns**: Validation logic separated from the model
+- **Single Responsibility**: Each function has a clear, single purpose
+- **Input Validation**: Comprehensive validation for user data
+- **Consistent Formatting**: Standardized output format
+
+### 3. Main Application Flow (`src/main.py`)
+The main application demonstrates a clean execution flow:
+
+```python
+def main():
+    print("Hello, World!")
+    user = create_user("Alice", 25)
+    print(f"Created user: {user.name}")
+
+def create_user(name, age):
+    from models.user import User
+    return User(name, age)
+```
+
+**Design Patterns:**
+- **Factory Pattern**: `create_user()` acts as a factory function
+- **Dependency Injection**: User creation is abstracted
+- **Clear Entry Point**: `main()` function provides clear application start
+
+### 4. Testing Infrastructure (`tests/test_main.py`)
+The test suite demonstrates good testing practices:
+
+```python
+class TestMain(unittest.TestCase):
+    def test_create_user(self):
+        user = create_user("Bob", 30)
+        self.assertIsInstance(user, User)
+        self.assertEqual(user.name, "Bob")
+        self.assertEqual(user.age, 30)
+```
+
+**Testing Patterns:**
+- **Unit Testing**: Focused on individual functions
+- **Assertion Coverage**: Tests both type and value correctness
+- **Clear Test Names**: Descriptive test method names
+- **Isolated Tests**: Each test is independent</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第3轮：研究更新 -->
+        <div class="iteration">
+            <div class="iteration-header">
+                <h2>第3轮：研究更新</h2>
+                <div class="subtitle">Research Update - 依赖关系分析</div>
+            </div>
+            <div class="iteration-content">
+                <div class="input-output">
+                    <h3>📥 LLM输入</h3>
+                    <div class="input-section">
+                        <h4>累积对话历史</h4>
+                        <div class="conversation-history">&lt;conversation_history&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第1轮输出]&lt;/assistant&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第2轮输出]&lt;/assistant&gt;
+&lt;/conversation_history&gt;</div>
+                    </div>
+                    
+                    <div class="input-section">
+                        <h4>更新的RAG上下文</h4>
+                        <div class="context-block">&lt;context&gt;
+&lt;file path="requirements.txt"&gt;
+requests==2.28.1
+pytest==7.2.0
+flask==2.2.2
+&lt;/file&gt;
+
+&lt;file path="README.md"&gt;
+# Test Project
+这是一个简单的Python项目，用于演示用户管理功能。
+## 功能特性
+- 用户创建和管理
+- 数据验证
+- 单元测试
+## 安装
+pip install -r requirements.txt
+## 运行
+python src/main.py
+&lt;/file&gt;
+&lt;/context&gt;</div>
+                    </div>
+                </div>
+
+                <div class="input-output">
+                    <h3>📤 LLM输出</h3>
+                    <div class="output-section">
+                        <h4>依赖关系分析</h4>
+                        <div class="code-block"># Research Update: Dependencies and Project Configuration
+
+## Dependency Analysis (`requirements.txt`)
+The project dependencies reveal the intended use cases:
+
+```
+requests==2.28.1
+pytest==7.2.0
+flask==2.2.2
+```
+
+**Dependency Analysis:**
+- **requests**: HTTP client library (not currently used in core code)
+- **pytest**: Modern testing framework (alternative to unittest)
+- **flask**: Web framework (suggests potential web interface)
+
+**Implications:**
+- Project is designed for web application development
+- Modern testing practices with pytest
+- HTTP communication capabilities available
+- Potential for API development
+
+## README Analysis
+The README provides clear project documentation:
+
+```markdown
+# Test Project
+这是一个简单的Python项目，用于演示用户管理功能。
+## 功能特性
+- 用户创建和管理
+- 数据验证
+- 单元测试
+## 安装
+pip install -r requirements.txt
+## 运行
+python src/main.py
+```
+
+**Documentation Quality:**
+- **Multilingual**: Chinese description with English commands
+- **Clear Structure**: Features, installation, usage
+- **Practical Instructions**: Step-by-step setup guide
+- **Feature Overview**: Concise feature list
+
+## Enhanced Architecture Understanding
+
+### 1. Project Scope
+- **Current State**: Standalone console application
+- **Potential Expansion**: Web application with Flask
+- **Testing Strategy**: Both unittest and pytest support
+- **External Integration**: HTTP capabilities via requests
+
+### 2. Development Workflow
+- **Setup**: `pip install -r requirements.txt`
+- **Execution**: `python src/main.py`
+- **Testing**: pytest or unittest
+- **Web Development**: Flask integration ready</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第4轮：研究更新 -->
+        <div class="iteration">
+            <div class="iteration-header">
+                <h2>第4轮：研究更新</h2>
+                <div class="subtitle">Research Update - 代码质量分析</div>
+            </div>
+            <div class="iteration-content">
+                <div class="input-output">
+                    <h3>📥 LLM输入</h3>
+                    <div class="input-section">
+                        <h4>累积对话历史</h4>
+                        <div class="conversation-history">&lt;conversation_history&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第1轮输出]&lt;/assistant&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第2轮输出]&lt;/assistant&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第3轮输出]&lt;/assistant&gt;
+&lt;/conversation_history&gt;</div>
+                    </div>
+                </div>
+
+                <div class="input-output">
+                    <h3>📤 LLM输出</h3>
+                    <div class="output-section">
+                        <h4>代码质量分析</h4>
+                        <div class="code-block"># Research Update: Code Quality and Best Practices
+
+## Code Quality Analysis
+
+### 1. Code Organization and Structure
+The project demonstrates excellent code organization:
+
+```
+src/
+├── main.py          # Application entry point
+├── utils.py         # Utility functions
+└── models/
+    └── user.py      # Data models
+```
+
+**Best Practices Observed:**
+- **Separation of Concerns**: Clear separation between models, utilities, and main logic
+- **Modular Design**: Each module has a single responsibility
+- **Logical Grouping**: Related functionality grouped together
+- **Clean Imports**: Minimal, necessary imports only
+
+### 2. Code Documentation Quality
+**Docstring Analysis:**
+```python
+def main():
+    """主程序入口"""
+    # Implementation
+
+def create_user(name, age):
+    """创建用户对象"""
+    # Implementation
+
+class User:
+    """用户模型类"""
+    # Implementation
+```
+
+**Documentation Strengths:**
+- **Consistent Style**: All functions have docstrings
+- **Multilingual**: Chinese docstrings for clarity
+- **Concise**: Brief but descriptive
+- **Complete Coverage**: All public methods documented
+
+### 3. Error Handling and Validation
+The validation logic demonstrates robust error handling:
+
+```python
+def validate_user(user):
+    if not user.name:
+        return False
+    if user.age < 0 or user.age > 150:
+        return False
+    return True
+```
+
+**Validation Patterns:**
+- **Input Validation**: Comprehensive validation rules
+- **Boundary Testing**: Age limits (0-150)
+- **Null Safety**: Name existence check
+- **Return Values**: Clear boolean responses
+
+## Architecture Patterns
+
+### 1. Factory Pattern Implementation
+```python
+def create_user(name, age):
+    from models.user import User
+    return User(name, age)
+```
+
+**Benefits:**
+- **Encapsulation**: User creation logic centralized
+- **Flexibility**: Easy to modify creation logic
+- **Testability**: Easy to mock and test
+- **Consistency**: Standardized object creation
+
+### 2. Separation of Concerns
+- **Models**: Data structure and basic methods
+- **Utils**: Business logic and validation
+- **Main**: Application flow and coordination
+- **Tests**: Verification and quality assurance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第5轮：最终结论 -->
+        <div class="iteration">
+            <div class="iteration-header">
+                <h2>第5轮：最终结论</h2>
+                <div class="subtitle">Final Conclusion - 完整Wiki结构</div>
+            </div>
+            <div class="iteration-content">
+                <div class="input-output">
+                    <h3>📥 LLM输入</h3>
+                    <div class="input-section">
+                        <h4>完整对话历史</h4>
+                        <div class="conversation-history">&lt;conversation_history&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第1轮输出]&lt;/assistant&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第2轮输出]&lt;/assistant&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第3轮输出]&lt;/assistant&gt;
+&lt;user&gt;Analyze this GitHub repository test_project...&lt;/user&gt;
+&lt;assistant&gt;[第4轮输出]&lt;/assistant&gt;
+&lt;/conversation_history&gt;</div>
+                    </div>
+                </div>
+
+                <div class="input-output">
+                    <h3>📤 LLM输出</h3>
+                    <div class="output-section">
+                        <h4>完整Wiki结构文档</h4>
+                        <div class="code-block"># Final Wiki Structure for test_project
+
+## 📋 Table of Contents
+1. [Project Overview](#project-overview)
+2. [Architecture](#architecture)
+3. [Code Structure](#code-structure)
+4. [API Documentation](#api-documentation)
+5. [Usage Examples](#usage-examples)
+6. [Development Guide](#development-guide)
+7. [Testing](#testing)
+8. [Dependencies](#dependencies)
+9. [Contributing](#contributing)
+
+---
+
+## 🎯 Project Overview
+
+### Purpose
+A simple Python-based user management system designed to demonstrate object-oriented programming principles, modular architecture, and best practices in software development.
+
+### Key Features
+- **User Creation**: Simple user object creation with name and age
+- **Data Validation**: Comprehensive input validation for user data
+- **Modular Design**: Clean separation of concerns across modules
+- **Testing**: Comprehensive unit testing with unittest framework
+- **Web-Ready**: Flask integration ready for web application development
+
+### Technology Stack
+- **Language**: Python 3.x
+- **Web Framework**: Flask 2.2.2
+- **Testing**: pytest 7.2.0, unittest
+- **HTTP Client**: requests 2.28.1
+- **Package Management**: pip, requirements.txt
+
+---
+
+## 🏗️ Architecture
+
+### System Design
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Main Module   │───▶│  Utility Module │───▶│   User Model    │
+│   (main.py)     │    │   (utils.py)    │    │  (user.py)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Application    │    │   Validation    │    │   Data Storage  │
+│     Flow        │    │   & Formatting  │    │   & Methods     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Design Patterns
+- **Factory Pattern**: `create_user()` function for object creation
+- **Separation of Concerns**: Clear module responsibilities
+- **Single Responsibility**: Each function has one clear purpose
+- **Dependency Injection**: Modular import structure
+
+### Data Flow
+1. **Input**: User provides name and age
+2. **Validation**: Utility functions validate input data
+3. **Creation**: Factory function creates User object
+4. **Processing**: User object provides formatted output
+5. **Output**: Application displays user information
+
+---
+
+## 📁 Code Structure
+
+### Directory Organization
+```
+test_project/
+├── README.md              # Project documentation
+├── requirements.txt       # Dependency specifications
+├── src/                   # Source code directory
+│   ├── main.py           # Application entry point
+│   ├── utils.py          # Utility functions
+│   └── models/           # Data models
+│       └── user.py       # User model class
+└── tests/                # Test directory
+    └── test_main.py      # Unit tests
+```
+
+### File Purposes
+- **`src/main.py`**: Application entry point and main execution flow
+- **`src/utils.py`**: Validation and formatting utility functions
+- **`src/models/user.py`**: User data model and methods
+- **`tests/test_main.py`**: Unit tests for core functionality
+- **`requirements.txt`**: Python package dependencies
+- **`README.md`**: Project documentation and setup instructions
+
+---
+
+## 📚 API Documentation
+
+### User Model (`src/models/user.py`)
+
+#### Class: User
+```python
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def get_info(self):
+        return f"{self.name}, {self.age} years old"
+```
+
+**Constructor Parameters:**
+- `name` (str): User's name
+- `age` (int): User's age
+
+**Methods:**
+- `get_info()`: Returns formatted user information string
+
+### Utility Functions (`src/utils.py`)
+
+#### Function: validate_user
+```python
+def validate_user(user):
+    if not user.name:
+        return False
+    if user.age < 0 or user.age > 150:
+        return False
+    return True
+```
+
+**Parameters:**
+- `user` (User): User object to validate
+
+**Returns:**
+- `bool`: True if user data is valid, False otherwise
+
+**Validation Rules:**
+- Name must not be empty
+- Age must be between 0 and 150
+
+#### Function: format_user_info
+```python
+def format_user_info(user):
+    return f"User: {user.name} (Age: {user.age})"
+```
+
+**Parameters:**
+- `user` (User): User object to format
+
+**Returns:**
+- `str`: Formatted user information string
+
+### Main Functions (`src/main.py`)
+
+#### Function: main
+```python
+def main():
+    print("Hello, World!")
+    user = create_user("Alice", 25)
+    print(f"Created user: {user.name}")
+```
+
+**Purpose:** Application entry point and main execution flow
+
+#### Function: create_user
+```python
+def create_user(name, age):
+    from models.user import User
+    return User(name, age)
+```
+
+**Parameters:**
+- `name` (str): User's name
+- `age` (int): User's age
+
+**Returns:**
+- `User`: New User object instance
+
+---
+
+## 💡 Usage Examples
+
+### Basic Usage
+```python
+# Import required modules
+from src.main import create_user
+from src.utils import validate_user, format_user_info
+
+# Create a user
+user = create_user("Alice", 25)
+
+# Validate user data
+if validate_user(user):
+    print("User data is valid")
+    print(format_user_info(user))
+else:
+    print("User data is invalid")
+```
+
+### Error Handling
+```python
+# Create user with invalid data
+user = create_user("", -5)  # Empty name, negative age
+
+# Validate and handle errors
+if not validate_user(user):
+    print("Invalid user data:")
+    print(f"Name: '{user.name}' (should not be empty)")
+    print(f"Age: {user.age} (should be 0-150)")
+```
+
+### Testing
+```python
+# Run unit tests
+import unittest
+from tests.test_main import TestMain
+
+# Create test suite
+suite = unittest.TestLoader().loadTestsFromTestCase(TestMain)
+runner = unittest.TextTestRunner(verbosity=2)
+runner.run(suite)
+```
+
+---
+
+## 🛠️ Development Guide
+
+### Environment Setup
+1. **Python Version**: Python 3.7 or higher
+2. **Virtual Environment**: Recommended for isolation
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. **Dependencies**: Install required packages
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Running the Application
+```bash
+# Navigate to project directory
+cd test_project
+
+# Run main application
+python src/main.py
+```
+
+### Development Workflow
+1. **Code Changes**: Modify source files in `src/`
+2. **Testing**: Run tests to verify functionality
+3. **Validation**: Ensure code follows project standards
+4. **Documentation**: Update relevant documentation
+
+### Code Style Guidelines
+- **PEP 8**: Follow Python PEP 8 style guide
+- **Docstrings**: Include docstrings for all functions and classes
+- **Type Hints**: Consider adding type hints for better code clarity
+- **Comments**: Add comments for complex logic
+
+---
+
+## 🧪 Testing
+
+### Test Structure
+```python
+class TestMain(unittest.TestCase):
+    def test_create_user(self):
+        user = create_user("Bob", 30)
+        self.assertIsInstance(user, User)
+        self.assertEqual(user.name, "Bob")
+        self.assertEqual(user.age, 30)
+```
+
+### Running Tests
+```bash
+# Run all tests
+python -m unittest discover tests
+
+# Run specific test file
+python -m unittest tests.test_main
+
+# Run with pytest (if available)
+pytest tests/
+```
+
+### Test Coverage
+- **User Creation**: Tests user object creation
+- **Type Validation**: Verifies object types
+- **Value Validation**: Checks property values
+- **Functionality**: Tests core application features
+
+---
+
+## 📦 Dependencies
+
+### Core Dependencies
+- **requests==2.28.1**: HTTP client library
+- **pytest==7.2.0**: Modern testing framework
+- **flask==2.2.2**: Web framework for future web features
+
+### Development Dependencies
+- **unittest**: Built-in testing framework
+- **pip**: Package management
+- **venv**: Virtual environment support
+
+### Installation
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 🤝 Contributing
+
+### Getting Started
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Contribution Guidelines
+- **Code Quality**: Maintain high code quality standards
+- **Testing**: Add tests for new features
+- **Documentation**: Update documentation as needed
+- **Style**: Follow project coding standards
+- **Review**: Participate in code reviews
+
+### Development Standards
+- **Version Control**: Use meaningful commit messages
+- **Branching**: Use feature branches for development
+- **Testing**: Maintain test coverage
+- **Documentation**: Keep documentation up to date
+
+---
+
+## 📊 Project Summary
+
+### Strengths
+- **Clean Architecture**: Well-organized, modular design
+- **Best Practices**: Follows Python and software engineering best practices
+- **Comprehensive Testing**: Good test coverage and testing strategy
+- **Documentation**: Clear documentation and code comments
+- **Extensibility**: Easy to extend and modify
+
+### Future Enhancements
+- **Web Interface**: Flask-based web application
+- **Database Integration**: Persistent data storage
+- **API Development**: RESTful API endpoints
+- **Advanced Validation**: More sophisticated validation rules
+- **Performance Optimization**: Code efficiency improvements
+
+### Learning Outcomes
+This project demonstrates:
+- Object-oriented programming principles
+- Modular software architecture
+- Testing strategies and best practices
+- Documentation and code quality standards
+- Python development workflow
+
+---
+
+*This wiki provides a comprehensive overview of the test_project codebase, covering all aspects from basic usage to advanced development practices.*</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>📁 项目路径: /Users/lvzheng/cursor/deepwiki-open/test_project</p>
+            <p>🔄 DeepWiki ReAct 流程 - 完整LLM调用记录</p>
+        </div>
+    </div>
+</body>
+</html>
