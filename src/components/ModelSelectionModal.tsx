@@ -34,7 +34,7 @@ interface ModelSelectionModalProps {
   setIncludedFiles?: (value: string) => void;
   showFileFilters?: boolean;
   showWikiType: boolean;
-  
+
   // Token input for refresh
   showTokenInput?: boolean;
   repositoryType?: 'github' | 'gitlab' | 'bitbucket';
@@ -43,6 +43,14 @@ interface ModelSelectionModalProps {
   authCode?: string;
   setAuthCode?: (code: string) => void;
   isAuthLoading?: boolean;
+
+  // Git authentication
+  gitUsername?: string;
+  setGitUsername?: (username: string) => void;
+  gitPassword?: string;
+  setGitPassword?: (password: string) => void;
+  gitAuthMethod?: 'token' | 'password' | 'none';
+  setGitAuthMethod?: (method: 'token' | 'password' | 'none') => void;
 }
 
 export default function ModelSelectionModal({
@@ -75,6 +83,12 @@ export default function ModelSelectionModal({
   showWikiType = true,
   showTokenInput = false,
   repositoryType = 'github',
+  gitUsername = '',
+  setGitUsername,
+  gitPassword = '',
+  setGitPassword,
+  gitAuthMethod = 'token',
+  setGitAuthMethod,
 }: ModelSelectionModalProps) {
   const { messages: t } = useLanguage();
 
@@ -123,7 +137,7 @@ export default function ModelSelectionModal({
     if (setExcludedFiles) setExcludedFiles(localExcludedFiles);
     if (setIncludedDirs) setIncludedDirs(localIncludedDirs);
     if (setIncludedFiles) setIncludedFiles(localIncludedFiles);
-    
+
     // Pass token to onApply if needed
     if (showTokenInput) {
       onApply(localAccessToken);
@@ -201,6 +215,12 @@ export default function ModelSelectionModal({
                   showTokenSection={showTokenSection}
                   onToggleTokenSection={() => setShowTokenSection(!showTokenSection)}
                   allowPlatformChange={false} // Don't allow platform change during refresh
+                  authMethod={gitAuthMethod}
+                  setAuthMethod={setGitAuthMethod}
+                  username={gitUsername}
+                  setUsername={setGitUsername}
+                  password={gitPassword}
+                  setPassword={setGitPassword}
                 />
               </>
             )}

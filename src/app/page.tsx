@@ -75,7 +75,7 @@ export default function Home() {
     return key;
   };
 
-  const [repositoryInput, setRepositoryInput] = useState('https://github.com/AsyncFuncAI/deepwiki-open');
+  const [repositoryInput, setRepositoryInput] = useState('https://igit.58corp.com/zhuzhan/recommend/hgtp-rec.git');
 
   const REPO_CONFIG_CACHE_KEY = 'deepwikiRepoConfigCache';
 
@@ -406,8 +406,8 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen paper-texture p-4 md:p-8 flex flex-col">
-      <header className="max-w-6xl mx-auto mb-6 h-fit w-full">
+    <div className="flex flex-col p-4 h-screen paper-texture md:p-8">
+      <header className="mx-auto mb-6 w-full max-w-6xl h-fit">
         <div
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-[var(--card-bg)] rounded-lg shadow-custom border border-[var(--border-color)] p-4">
           <div className="flex items-center">
@@ -430,7 +430,7 @@ export default function Home() {
 
           <form onSubmit={handleFormSubmit} className="flex flex-col gap-3 w-full max-w-3xl">
             {/* Repository URL input and submit button */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -496,7 +496,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full overflow-y-auto">
+      <main className="overflow-y-auto flex-1 mx-auto w-full max-w-6xl">
         <div
           className="min-h-full flex flex-col items-center p-8 pt-10 bg-[var(--card-bg)] rounded-lg shadow-custom card-japanese">
 
@@ -504,8 +504,8 @@ export default function Home() {
           {!projectsLoading && projects.length > 0 ? (
             <div className="w-full">
               {/* Header section for existing projects */}
-              <div className="flex flex-col items-center w-full max-w-2xl mb-8 mx-auto">
-                <div className="flex flex-col sm:flex-row items-center mb-6 gap-4">
+              <div className="flex flex-col items-center mx-auto mb-8 w-full max-w-2xl">
+                <div className="flex flex-col gap-4 items-center mb-6 sm:flex-row">
                   <div className="relative">
                     <div className="absolute -inset-1 bg-[var(--accent-primary)]/20 rounded-full blur-md"></div>
                     <FaWikipediaW className="text-5xl text-[var(--accent-primary)] relative z-10" />
@@ -528,8 +528,8 @@ export default function Home() {
           ) : (
             <>
               {/* Header section */}
-              <div className="flex flex-col items-center w-full max-w-2xl mb-8">
-                <div className="flex flex-col sm:flex-row items-center mb-6 gap-4">
+              <div className="flex flex-col items-center mb-8 w-full max-w-2xl">
+                <div className="flex flex-col gap-4 items-center mb-6 sm:flex-row">
                   <div className="relative">
                     <div className="absolute -inset-1 bg-[var(--accent-primary)]/20 rounded-full blur-md"></div>
                     <FaWikipediaW className="text-5xl text-[var(--accent-primary)] relative z-10" />
@@ -549,7 +549,7 @@ export default function Home() {
           <div
             className="w-full max-w-2xl mb-10 bg-[var(--accent-primary)]/5 border border-[var(--accent-primary)]/20 rounded-lg p-5">
             <h3 className="text-sm font-semibold text-[var(--accent-primary)] mb-3 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+              <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -580,7 +580,7 @@ export default function Home() {
           {/* Visualization section - improved for better visibility */}
           <div
             className="w-full max-w-2xl mb-8 bg-[var(--background)]/70 rounded-lg p-6 border border-[var(--border-color)]">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4">
+            <div className="flex flex-col gap-2 items-start mb-4 sm:flex-row sm:items-center">
               <svg xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 text-[var(--accent-primary)] flex-shrink-0 mt-0.5 sm:mt-0" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor">
@@ -611,12 +611,12 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="max-w-6xl mx-auto mt-8 flex flex-col gap-4 w-full">
+      <footer className="flex flex-col gap-4 mx-auto mt-8 w-full max-w-6xl">
         <div
           className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[var(--card-bg)] rounded-lg p-4 border border-[var(--border-color)] shadow-custom">
           <p className="text-[var(--muted)] text-sm font-serif">{t('footer.copyright')}</p>
 
-          <div className="flex items-center gap-6">
+          <div className="flex gap-6 items-center">
             <div className="flex items-center space-x-5">
               <a href="https://github.com/AsyncFuncAI/deepwiki-open" target="_blank" rel="noopener noreferrer"
                 className="text-[var(--muted)] hover:text-[var(--accent-primary)] transition-colors">
