@@ -144,6 +144,11 @@ export default function Home() {
   const [authRequired, setAuthRequired] = useState<boolean>(false);
   const [authCode, setAuthCode] = useState<string>('');
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  
+  // Git authentication state for custom web platform
+  const [gitAuthMethod, setGitAuthMethod] = useState<'token' | 'password' | 'none'>('token');
+  const [gitUsername, setGitUsername] = useState<string>('');
+  const [gitPassword, setGitPassword] = useState<string>('');
 
   // Sync the language context with the selectedLanguage state
   useEffect(() => {
@@ -336,7 +341,7 @@ export default function Home() {
     const parsedRepo = parseRepositoryInput(repositoryInput);
 
     if (!parsedRepo) {
-      setError('Invalid repository format. Use "owner/repo", GitHub/GitLab/BitBucket URL, or a local folder path like "/path/to/folder" or "C:\\path\\to\\folder".');
+      setError('Invalid repository format. Use "owner/repo", GitHub/GitLab/BitBucket URL, or a local folder path like "/path/to/folder" or "C:\\\\path\\\\to\\\\folder".');
       setIsSubmitting(false);
       return;
     }
@@ -347,6 +352,16 @@ export default function Home() {
     const params = new URLSearchParams();
     if (accessToken) {
       params.append('token', accessToken);
+    }
+    // Add git authentication params for custom web platform
+    if (gitAuthMethod) {
+      params.append('git_auth_method', gitAuthMethod);
+    }
+    if (gitUsername) {
+      params.append('git_username', gitUsername);
+    }
+    if (gitPassword) {
+      params.append('git_password', gitPassword);
     }
     // Always include the type parameter
     params.append('type', (type == 'local' ? type : selectedPlatform) || 'github');

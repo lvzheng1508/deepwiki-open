@@ -632,3 +632,153 @@ async def get_processed_projects():
     except Exception as e:
         logger.error(f"Error listing processed projects from {WIKI_CACHE_DIR}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to list processed projects from server cache.")
+
+
+class GitCloneRequest(BaseModel):
+    repo_url: str = Field(..., description="URL of the Git repository to clone")
+    username: Optional[str] = Field(None, description="Username for authentication")
+    password: Optional[str] = Field(None, description="Password or token for authentication")
+    auth_method: Optional[Literal['token', 'password', 'none']] = Field('token', description="Authentication method to use")
+
+
+# Add a temporary directory to store cloned repositories
+import tempfile
+import subprocess
+from pathlib import Path
+
+
+def is_safe_path(path: str) -> bool:
+    """Check if the path is safe to use (prevents directory traversal)."""
+    # Resolve to absolute path and make sure it's within expected directory
+    abs_path = os.path.abspath(path)
+    safe_base = os.path.abspath(tempfile.gettempdir())
+    return abs_path.startswith(safe_base)
+
+
+@app.post("/git/clone")
+async def clone_git_repository(request: GitCloneRequest):
+    """Clone a Git repository to a temporary location and return the path."""
+    try:
+        logger.info(f"Attempting to clone Git repository: {request.repo_url}")
+        
+        # Create a temporary directory for the clone
+        temp_dir = tempfile.mkdtemp(prefix="deepwiki_git_clone_")
+        
+        # Parse the repo URL to get the repo name
+        repo_name = request.repo_url.split('/')[-1].replace('.git', '')
+        if repo_name == '':
+            repo_name = request.repo_url.split('/')[-2]
+        
+        clone_path = os.path.join(temp_dir, repo_name)
+        
+        # Build the git clone command with authentication
+        clone_cmd = ["git", "clone"]
+        
+        # If authentication is provided, use it
+        if request.username and (request.password or request.auth_method == 'token'):
+            # Parse the URL to reconstruct with credentials
+            repo_url = request.repo_url
+            if repo_url.startswith("https://"):
+                # Insert credentials in URL: https://username:password@domain.com/repo.git
+                domain_and_path = repo_url[8:]  # Remove "https://"
+                repo_url = f"https://{request.username}:{request.password}@{domain_and_path}"
+                clone_cmd.extend([repo_url, clone_path])
+            else:
+                clone_cmd.extend([request.repo_url, clone_path])
+        else:
+            clone_cmd.extend([request.repo_url, clone_path])
+        
+        # Execute the git clone command
+        result = subprocess.run(clone_cmd, capture_output=True, text=True, timeout=300)  # 5 minute timeout
+        
+        if result.returncode != 0:
+            logger.error(f"Git clone failed: {result.stderr}")
+            # Clean up the temporary directory
+            import shutil
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Git clone failed: {result.stderr}"}
+            )
+        
+        logger.info(f"Successfully cloned repository to: {clone_path}")
+        
+        # Return the path to the cloned repository
+        return {"clone_path": clone_path, "temp_dir": temp_dir}
+        
+    except subprocess.TimeoutExpired:
+        logger.error("Git clone command timed out")
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True) if 'temp_dir' in locals() else None
+        return JSONResponse(
+            status_code=408,
+            content={"error": "Git clone timed out after 5 minutes"}
+        )
+    except Exception as e:
+        logger.error(f"Error cloning Git repository: {str(e)}")
+        # Clean up the temporary directory if it was created
+        import shutil
+        if 'temp_dir' in locals():
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error cloning Git repository: {str(e)}"}
+        )
+
+
+@app.post("/git/clone_and_get_structure")
+async def clone_git_repo_and_get_structure(request: GitCloneRequest):
+    """Clone a Git repository and return its structure in one call."""
+    try:
+        # Clone the repository
+        clone_response = await clone_git_repository(request)
+        if isinstance(clone_response, Response):
+            return clone_response
+        if "error" in clone_response:
+            return clone_response
+        
+        clone_path = clone_response.get("clone_path")
+        temp_dir = clone_response.get("temp_dir")
+        
+        if not clone_path or not temp_dir:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Failed to get clone path from clone response"}
+            )
+        
+        # Get the file structure using the existing function
+        file_tree_lines = []
+        readme_content = ""
+        
+        for root, dirs, files in os.walk(clone_path):
+            # Exclude hidden dirs/files and virtual envs
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__pycache__' and d != 'node_modules' and d != '.venv']
+            for file in files:
+                if file.startswith('.') or file == '__init__.py' or file == '.DS_Store':
+                    continue
+                rel_dir = os.path.relpath(root, clone_path)
+                rel_file = os.path.join(rel_dir, file) if rel_dir != '.' else file
+                file_tree_lines.append(rel_file)
+                # Find README.md (case-insensitive)
+                if file.lower() == 'readme.md' and not readme_content:
+                    try:
+                        with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                            readme_content = f.read()
+                    except Exception as e:
+                        logger.warning(f"Could not read README.md: {str(e)}")
+                        readme_content = ""
+        
+        file_tree_str = '\n'.join(sorted(file_tree_lines))
+        
+        # Clean up the temporary directory after getting structure
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        
+        return {"file_tree": file_tree_str, "readme": readme_content, "temp_cleaned": True}
+        
+    except Exception as e:
+        logger.error(f"Error in clone and get structure: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error in clone and get structure: {str(e)}"}
+        )

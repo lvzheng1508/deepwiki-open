@@ -195,7 +195,7 @@ export default function RepoWikiPage() {
   const repoType = (() => {
     // If the user explicitly specifies the type, prefer that
     const explicitType = searchParams.get('type');
-    if (explicitType === 'github' || explicitType === 'gitlab' || explicitType === 'bitbucket' || explicitType === 'local') {
+    if (explicitType === 'github' || explicitType === 'gitlab' || explicitType === 'bitbucket' || explicitType === 'local' || explicitType === 'web') {
       return explicitType;
     }
 
@@ -215,6 +215,11 @@ export default function RepoWikiPage() {
 
   // Import language context for translations
   const { messages } = useLanguage();
+
+  // Get git authentication parameters from search params
+  const gitAuthMethodParam = searchParams.get('git_auth_method') as 'token' | 'password' | 'none' | null;
+  const gitUsernameParam = searchParams.get('git_username') || '';
+  const gitPasswordParam = searchParams.get('git_password') || '';
 
   // Initialize repo info
   const repoInfo = useMemo<RepoInfo>(() => ({
@@ -283,6 +288,11 @@ export default function RepoWikiPage() {
   const [authRequired, setAuthRequired] = useState<boolean>(false);
   const [authCode, setAuthCode] = useState<string>('');
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  
+  // Git clone authentication state - initialize from URL params if available
+  const [gitAuthMethod, setGitAuthMethod] = useState<'token' | 'password' | 'none'>(gitAuthMethodParam || 'token');
+  const [gitUsername, setGitUsername] = useState(gitUsernameParam || '');
+  const [gitPassword, setGitPassword] = useState(gitPasswordParam || '');
 
   // Default branch state
   const [defaultBranch, setDefaultBranch] = useState<string>('main');
@@ -312,6 +322,15 @@ export default function RepoWikiPage() {
       } else if (hostname === 'bitbucket.org' || hostname.includes('bitbucket')) {
         // Bitbucket URL format: https://bitbucket.org/owner/repo/src/branch/path
         return `${repoUrl}/src/${defaultBranch}/${filePath}`;
+      } else if (effectiveRepoInfo.type === 'web') {
+        // For custom web platforms, try to determine the URL format based on the hostname
+        if (hostname.includes('igit')) {
+          // For igit.58corp.com or similar, use a generic approach
+          return `${repoUrl}/tree/${defaultBranch}/${filePath}`;
+        } else {
+          // Generic fallback for other custom platforms
+          return `${repoUrl}/-/blob/${defaultBranch}/${filePath}`;
+        }
       }
     } catch (error) {
       console.warn('Error generating file URL:', error);
@@ -1537,6 +1556,241 @@ IMPORTANT:
           }
         } catch (err) {
           console.warn('Could not fetch Bitbucket README.md, continuing with empty README', err);
+        }
+      }
+      else if (effectiveRepoInfo.type === 'web') {
+        // Custom web platform approach (for enterprise Git platforms like igit.58corp.com)
+        // This handles custom Git platforms that may have different API structures
+        // First, try using the new Git clone endpoint with username/password or token
+        if ((gitUsername && gitPassword) || (gitAuthMethod === 'token' && currentToken)) {
+          try {
+            console.log('Attempting to clone repository via Git endpoint...');
+            const gitCloneResponse = await fetch('/api/git/clone_and_get_structure', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                repo_url: effectiveRepoInfo.repoUrl,
+                username: gitAuthMethod === 'token' || !gitUsername ? undefined : gitUsername,
+                password: gitAuthMethod === 'token' ? currentToken : gitPassword,
+                auth_method: gitAuthMethod
+              })
+            });
+
+            if (gitCloneResponse.ok) {
+              const gitData = await gitCloneResponse.json();
+              if (gitData.file_tree) {
+                fileTreeData = gitData.file_tree;
+                readmeContent = gitData.readme;
+                console.log('Successfully fetched repository structure via Git clone');
+                // We can't determine the default branch via Git clone, so default to main
+                setDefaultBranch('main');
+                // Successfully used Git clone, exit this branch
+              } else {
+                console.warn('Git clone succeeded but no file tree returned:', gitData);
+                // Fall through to API attempts below if Git clone didn't return proper data
+              }
+            } else {
+              const errorData = await gitCloneResponse.text();
+              console.warn('Git clone API failed:', errorData);
+              // Fall through to API attempts below
+            }
+          } catch (gitCloneErr) {
+            console.warn('Git clone attempt failed, falling back to API methods:', gitCloneErr);
+            // Fall through to API attempts below
+          }
+        }
+
+        // If we got here without success, or didn't have credentials for Git clone,
+        // try API methods as fallbacks
+        if (!fileTreeData) {
+          const repoPath = extractUrlPath(effectiveRepoInfo.repoUrl ?? '') ?? `${owner}/${repo}`;
+          const repoDomain = extractUrlDomain(effectiveRepoInfo.repoUrl ?? ''); 
+
+          // Try GitLab API v4 as a common alternative for enterprise Git platforms
+          let gitlabSuccess = false;
+          let gitlabApiErrorDetails = '';
+          
+          try {
+            // Attempt GitLab API v4 with the provided repo URL
+            const encodedProjectPath = encodeURIComponent(repoPath);
+            const validatedDomain = repoDomain ? `${new URL(`https://${repoDomain}`).origin}` : 'https://gitlab.com';
+            const projectInfoUrl = `${validatedDomain}/api/v4/projects/${encodedProjectPath}`;
+            const headers = createGitlabHeaders(currentToken);
+
+            const projectInfoRes = await fetch(projectInfoUrl, { headers });
+            
+            if (projectInfoRes.ok) {
+              const projectInfo = await projectInfoRes.json();
+              const defaultBranchLocal = projectInfo.default_branch || 'main';
+              setDefaultBranch(defaultBranchLocal);
+
+              /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+              const filesData: any[] = [];
+              let page = 1;
+              let morePages = true;
+
+              while (morePages) {
+                const apiUrl = `${projectInfoUrl}/repository/tree?recursive=true&per_page=100&page=${page}`;
+                const response = await fetch(apiUrl, { headers });
+                
+                if (response.ok) {
+                  const pageData = await response.json();
+                  filesData.push(...pageData);
+                  const nextPage = response.headers.get('x-next-page');
+                  morePages = !!nextPage;
+                  page = nextPage ? parseInt(nextPage, 10) : page + 1;
+                } else {
+                  const errorData = await response.text();
+                  throw new Error(`Error fetching repository structure (page ${page}): ${errorData}`);
+                }
+              }
+
+              if (!Array.isArray(filesData) || filesData.length === 0) {
+                throw new Error('Could not fetch repository structure. Repository might be empty or inaccessible.');
+              }
+
+              fileTreeData = filesData
+                .filter((item: { type: string; path: string }) => item.type === 'blob')
+                .map((item: { type: string; path: string }) => item.path)
+                .join('\n');
+
+              // Try to fetch README.md content
+              const readmeUrl = `${projectInfoUrl}/repository/files/README.md/raw`;
+              try {
+                const readmeResponse = await fetch(readmeUrl, { headers });
+                if (readmeResponse.ok) {
+                  readmeContent = await readmeResponse.text();
+                }
+              } catch (readmeErr) {
+                console.warn('Could not fetch README.md for custom web platform:', readmeErr);
+              }
+
+              gitlabSuccess = true;
+            } else {
+              const errorData = await projectInfoRes.text();
+              gitlabApiErrorDetails = `Status: ${projectInfoRes.status}, Response: ${errorData}`;
+            }
+          } catch (gitlabErr) {
+            console.error('GitLab API fallback failed for custom web platform:', gitlabErr);
+            gitlabApiErrorDetails = `GitLab API fallback error: ${gitlabErr instanceof Error ? gitlabErr.message : String(gitlabErr)}`;
+          }
+
+          if (!gitlabSuccess) {
+            // Try GitHub Enterprise API v3 as another common alternative
+            let githubEnterpriseSuccess = false;
+            let githubApiErrorDetails = '';
+            
+            try {
+              const getGithubApiUrl = (repoUrl: string | null): string => {
+                if (!repoUrl) {
+                  return 'https://api.github.com'; // Default to public GitHub
+                }
+                
+                try {
+                  const url = new URL(repoUrl);
+                  const hostname = url.hostname;
+                  
+                  // If it's the public GitHub, use the standard API URL
+                  if (hostname === 'github.com') {
+                    return 'https://api.github.com';
+                  }
+                  
+                  // For GitHub Enterprise, use the enterprise API URL format
+                  // GitHub Enterprise API URL format: https://github.company.com/api/v3
+                  return `${url.protocol}//${hostname}/api/v3`;
+                } catch {
+                  return 'https://api.github.com'; // Fallback to public GitHub if URL parsing fails
+                }
+              };
+
+              const githubApiBaseUrl = getGithubApiUrl(effectiveRepoInfo.repoUrl);
+              
+              // First, try to get the default branch from the repository info
+              let defaultBranchLocal = null;
+              try {
+                const repoInfoResponse = await fetch(`${githubApiBaseUrl}/repos/${owner}/${repo}`, {
+                  headers: createGithubHeaders(currentToken)
+                });
+                
+                if (repoInfoResponse.ok) {
+                  const repoData = await repoInfoResponse.json();
+                  defaultBranchLocal = repoData.default_branch;
+                  console.log(`Found default branch: ${defaultBranchLocal}`);
+                  setDefaultBranch(defaultBranchLocal || 'main');
+                }
+              } catch (infoErr) {
+                console.warn('Could not fetch repository info for default branch:', infoErr);
+              }
+
+              // Create list of branches to try, prioritizing the actual default branch
+              const branchesToTry = defaultBranchLocal 
+                ? [defaultBranchLocal, 'main', 'master'].filter((branch, index, arr) => arr.indexOf(branch) === index)
+                : ['main', 'master'];
+
+              for (const branch of branchesToTry) {
+                const apiUrl = `${githubApiBaseUrl}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
+                const headers = createGithubHeaders(currentToken);
+
+                console.log(`Fetching repository structure from branch: ${branch}`);
+                try {
+                  const response = await fetch(apiUrl, { headers });
+
+                  if (response.ok) {
+                    const treeData = await response.json();
+                    console.log('Successfully fetched repository structure via GitHub Enterprise API');
+                    
+                    fileTreeData = treeData.tree
+                      .filter((item: { type: string; path: string }) => item.type === 'blob')
+                      .map((item: { type: string; path: string }) => item.path)
+                      .join('\n');
+
+                    // Try to fetch README.md content
+                    try {
+                      const readmeResponse = await fetch(`${githubApiBaseUrl}/repos/${owner}/${repo}/readme`, {
+                        headers
+                      });
+
+                      if (readmeResponse.ok) {
+                        const readmeData = await readmeResponse.json();
+                        readmeContent = atob(readmeData.content);
+                      } else {
+                        console.warn(`Could not fetch README.md, status: ${readmeResponse.status}`);
+                      }
+                    } catch (readmeErr) {
+                      console.warn('Could not fetch README.md for custom web platform:', readmeErr);
+                    }
+                    
+                    githubEnterpriseSuccess = true;
+                    break;
+                  } else {
+                    const errorData = await response.text();
+                    githubApiErrorDetails = `Status: ${response.status}, Response: ${errorData}`;
+                    console.error(`Error fetching repository structure: ${githubApiErrorDetails}`);
+                  }
+                } catch (err) {
+                  console.error(`Network error fetching branch ${branch}:`, err);
+                }
+              }
+            } catch (githubErr) {
+              console.error('GitHub Enterprise API attempt failed for custom web platform:', githubErr);
+              githubApiErrorDetails = `GitHub Enterprise API fallback error: ${githubErr instanceof Error ? githubErr.message : String(githubErr)}`;
+            }
+
+            if (!githubEnterpriseSuccess) {
+              // If both GitLab and GitHub fallback attempts failed, throw an error
+              if (gitlabApiErrorDetails && githubApiErrorDetails) {
+                throw new Error(`Could not fetch repository structure from custom web platform. GitLab API failed: ${gitlabApiErrorDetails}. GitHub Enterprise API failed: ${githubApiErrorDetails}`);
+              } else if (gitlabApiErrorDetails) {
+                throw new Error(`Could not fetch repository structure from custom web platform. GitLab API failed: ${gitlabApiErrorDetails}`);
+              } else if (githubApiErrorDetails) {
+                throw new Error(`Could not fetch repository structure from custom web platform. GitHub Enterprise API failed: ${githubApiErrorDetails}`);
+              } else {
+                throw new Error('Could not fetch repository structure. Repository might not exist, be empty, private, or use an unsupported API.');
+              }
+            }
+          }
         }
       }
 

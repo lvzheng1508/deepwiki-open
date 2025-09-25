@@ -65,6 +65,7 @@ next-env.d.ts
 
 .idea/
 .specstory/
+*.bak
 
 # ignore adding self-signed certs
 certs/

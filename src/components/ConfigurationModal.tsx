@@ -32,12 +32,20 @@ interface ConfigurationModalProps {
   setCustomModel: (value: string) => void;
 
   // Platform selection
-  selectedPlatform: 'github' | 'gitlab' | 'bitbucket';
-  setSelectedPlatform: (value: 'github' | 'gitlab' | 'bitbucket') => void;
+  selectedPlatform: 'github' | 'gitlab' | 'bitbucket' | 'web';
+  setSelectedPlatform: (value: 'github' | 'gitlab' | 'bitbucket' | 'web') => void;
 
   // Access token
   accessToken: string;
   setAccessToken: (value: string) => void;
+
+  // Authentication method for web platform
+  authMethod?: 'token' | 'password' | 'none';
+  setAuthMethod?: (value: 'token' | 'password' | 'none') => void;
+  username?: string;
+  setUsername?: (value: string) => void;
+  password?: string;
+  setPassword?: (value: string) => void;
 
   // File filter options
   excludedDirs: string;
@@ -81,6 +89,12 @@ export default function ConfigurationModal({
   setSelectedPlatform,
   accessToken,
   setAccessToken,
+  authMethod: propAuthMethod,
+  setAuthMethod: propSetAuthMethod,
+  username: propUsername,
+  setUsername: propSetUsername,
+  password: propPassword,
+  setPassword: propSetPassword,
   excludedDirs,
   setExcludedDirs,
   excludedFiles,
@@ -100,6 +114,19 @@ export default function ConfigurationModal({
 
   // Show token section state
   const [showTokenSection, setShowTokenSection] = useState(false);
+  
+  // Local state for auth method, username, and password to handle cases when these props are not provided
+  const [localAuthMethod, setLocalAuthMethod] = useState<'token' | 'password' | 'none'>('token');
+  const [localUsername, setLocalUsername] = useState('');
+  const [localPassword, setLocalPassword] = useState('');
+
+  // Use prop values if available, otherwise use local state
+  const authMethod = propAuthMethod ?? localAuthMethod;
+  const setAuthMethod = propSetAuthMethod ?? setLocalAuthMethod;
+  const username = propUsername ?? localUsername;
+  const setUsername = propSetUsername ?? setLocalUsername;
+  const password = propPassword ?? localPassword;
+  const setPassword = propSetPassword ?? setLocalPassword;
 
   if (!isOpen) return null;
 
@@ -237,6 +264,12 @@ export default function ConfigurationModal({
               setSelectedPlatform={setSelectedPlatform}
               accessToken={accessToken}
               setAccessToken={setAccessToken}
+              authMethod={authMethod}
+              setAuthMethod={setAuthMethod}
+              username={username}
+              setUsername={setUsername}
+              password={password}
+              setPassword={setPassword}
               showTokenSection={showTokenSection}
               onToggleTokenSection={() => setShowTokenSection(!showTokenSection)}
               allowPlatformChange={true}
