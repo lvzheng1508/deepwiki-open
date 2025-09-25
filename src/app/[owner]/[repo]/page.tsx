@@ -192,13 +192,26 @@ export default function RepoWikiPage() {
   const isCustomModelParam = searchParams.get('is_custom_model') === 'true';
   const customModelParam = searchParams.get('custom_model') || '';
   const language = searchParams.get('language') || 'en';
-  const repoType = repoUrl?.includes('bitbucket.org')
-    ? 'bitbucket'
-    : repoUrl?.includes('gitlab.com')
-      ? 'gitlab'
-      : repoUrl?.includes('github.com')
-        ? 'github'
-        : searchParams.get('type') || 'github';
+  const repoType = (() => {
+    // If the user explicitly specifies the type, prefer that
+    const explicitType = searchParams.get('type');
+    if (explicitType === 'github' || explicitType === 'gitlab' || explicitType === 'bitbucket' || explicitType === 'local') {
+      return explicitType;
+    }
+
+    if (repoUrl) {
+      try {
+        const hostname = new URL(repoUrl).hostname.toLowerCase();
+        if (hostname.includes('bitbucket')) return 'bitbucket';
+        if (hostname.includes('gitlab')) return 'gitlab';
+        if (hostname.includes('github')) return 'github';
+      } catch {
+        // Fallback below
+      }
+    }
+
+    return 'github';
+  })();
 
   // Import language context for translations
   const { messages } = useLanguage();
@@ -1186,6 +1199,7 @@ IMPORTANT:
         // Try to get the tree data for common branch names
         let treeData = null;
         let apiErrorDetails = '';
+        let gitlabFallbackSucceeded = false;
 
         // Determine the GitHub API base URL based on the repository URL
         const getGithubApiUrl = (repoUrl: string | null): string => {
@@ -1259,10 +1273,82 @@ IMPORTANT:
         }
 
         if (!treeData || !treeData.tree) {
-          if (apiErrorDetails) {
-            throw new Error(`Could not fetch repository structure. API Error: ${apiErrorDetails}`);
-          } else {
-            throw new Error('Could not fetch repository structure. Repository might not exist, be empty or private.');
+          // Auto-detect self-hosted GitLab mistakenly treated as GitHub Enterprise
+          if (apiErrorDetails && apiErrorDetails.includes('API V3 is no longer supported')) {
+            try {
+              // Attempt GitLab API v4 fallback using the provided repo URL
+              const projectPath = extractUrlPath(effectiveRepoInfo.repoUrl ?? '') ?? `${owner}/${repo}`;
+              const projectDomain = extractUrlDomain(effectiveRepoInfo.repoUrl ?? 'https://gitlab.com');
+              const encodedProjectPath = encodeURIComponent(projectPath);
+              const headers = createGitlabHeaders(currentToken);
+
+              let projectInfoUrl: string;
+              try {
+                const validatedUrl = new URL(projectDomain ?? '');
+                projectInfoUrl = `${validatedUrl.origin}/api/v4/projects/${encodedProjectPath}`;
+              } catch (err) {
+                throw new Error(`Invalid project domain URL: ${projectDomain}`);
+              }
+
+              const projectInfoRes = await fetch(projectInfoUrl, { headers });
+              if (!projectInfoRes.ok) {
+                const errorData = await projectInfoRes.text();
+                throw new Error(`GitLab project info error: Status ${projectInfoRes.status}, Response: ${errorData}`);
+              }
+
+              const projectInfo = await projectInfoRes.json();
+              const defaultBranchLocalGitlab = projectInfo.default_branch || 'main';
+              setDefaultBranch(defaultBranchLocalGitlab);
+
+              /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+              const filesData: any[] = [];
+              let page = 1;
+              let morePages = true;
+
+              while (morePages) {
+                const apiUrl = `${projectInfoUrl}/repository/tree?recursive=true&per_page=100&page=${page}`;
+                const response = await fetch(apiUrl, { headers });
+                if (!response.ok) {
+                  const errorData = await response.text();
+                  throw new Error(`Error fetching GitLab repository structure (page ${page}): ${errorData}`);
+                }
+                const pageData = await response.json();
+                filesData.push(...pageData);
+                const nextPage = response.headers.get('x-next-page');
+                morePages = !!nextPage;
+                page = nextPage ? parseInt(nextPage, 10) : page + 1;
+              }
+
+              if (!Array.isArray(filesData) || filesData.length === 0) {
+                throw new Error('Could not fetch repository structure. Repository might be empty or inaccessible.');
+              }
+
+              fileTreeData = filesData
+                .filter((item: { type: string; path: string }) => item.type === 'blob')
+                .map((item: { type: string; path: string }) => item.path)
+                .join('\n');
+
+              // Try to fetch README.md content
+              const readmeUrl = `${projectInfoUrl}/repository/files/README.md/raw`;
+              try {
+                const readmeResponse = await fetch(readmeUrl, { headers });
+                if (readmeResponse.ok) {
+                  readmeContent = await readmeResponse.text();
+                }
+              } catch {}
+
+              gitlabFallbackSucceeded = true;
+            } catch (fallbackErr) {
+              console.error('GitLab fallback failed:', fallbackErr);
+            }
+          }
+
+          if (!gitlabFallbackSucceeded) {
+            if (apiErrorDetails) {
+              throw new Error(`Could not fetch repository structure. API Error: ${apiErrorDetails}`);
+            } else {
+              throw new Error('Could not fetch repository structure. Repository might not exist, be empty or private.');
+            }
           }
         }
 
