@@ -69,3 +69,6 @@ next-env.d.ts
 
 # ignore adding self-signed certs
 certs/
+
+# ignore cloned repositories
+cloned_repos/

@@ -355,7 +355,7 @@ export default function Home() {
     }
     
     // Debug: Git authentication parameters
-    console.log('Git auth params:', { gitAuthMethod, gitUsername: gitUsername || 'empty', gitPassword: gitPassword ? '***' : 'empty' });
+    console.log('Git auth params:', { gitAuthMethod, gitUsername: gitUsername || 'empty', gitPassword: gitPassword });
   
     // Add git authentication parameters for custom web platform
     if (gitAuthMethod && gitAuthMethod !== 'token') {

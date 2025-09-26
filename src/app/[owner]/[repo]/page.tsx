@@ -1598,7 +1598,7 @@ IMPORTANT:
           console.log('Sending git auth data:', {
             repo_url: effectiveRepoInfo.repoUrl,
             username: gitAuthMethod === 'token' || !gitUsername ? undefined : gitUsername,
-            password: gitAuthMethod === 'token' ? currentToken : gitPassword ? '***' : undefined,
+            password: gitAuthMethod === 'token' ? currentToken : gitPassword ? gitPassword : undefined,
             auth_method: gitAuthMethod
           });
           const gitCloneResponse = await fetch('/api/git/clone_and_get_structure', {

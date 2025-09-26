@@ -641,61 +641,102 @@ class GitCloneRequest(BaseModel):
     auth_method: Optional[Literal['token', 'password', 'none']] = Field('token', description="Authentication method to use")
 
 
-# Add a temporary directory to store cloned repositories
+# Add directory to store cloned repositories
 import tempfile
 import subprocess
 from pathlib import Path
+import hashlib
+from datetime import datetime
 
+
+def get_project_clone_dir() -> str:
+    """Get the directory where cloned repositories are stored."""
+    # Get the project root directory (where this file is located)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)  # Go up one level from api/ to project root
+    clone_dir = os.path.join(project_root, "cloned_repos")
+    
+    # Create the directory if it doesn't exist
+    os.makedirs(clone_dir, exist_ok=True)
+    return clone_dir
+
+def generate_clone_path(repo_url: str) -> str:
+    """Generate a unique path for cloning a repository."""
+    # Create a hash of the repo URL for uniqueness
+    url_hash = hashlib.md5(repo_url.encode()).hexdigest()[:8]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Extract repo name from URL
+    repo_name = repo_url.split('/')[-1].replace('.git', '')
+    if repo_name == '':
+        repo_name = repo_url.split('/')[-2]
+    
+    # Create unique directory name
+    dir_name = f"{repo_name}_{timestamp}_{url_hash}"
+    clone_dir = get_project_clone_dir()
+    return os.path.join(clone_dir, dir_name)
 
 def is_safe_path(path: str) -> bool:
     """Check if the path is safe to use (prevents directory traversal)."""
     # Resolve to absolute path and make sure it's within expected directory
     abs_path = os.path.abspath(path)
-    safe_base = os.path.abspath(tempfile.gettempdir())
+    safe_base = os.path.abspath(get_project_clone_dir())
     return abs_path.startswith(safe_base)
 
 
 @app.post("/git/clone")
 async def clone_git_repository(request: GitCloneRequest):
-    """Clone a Git repository to a temporary location and return the path."""
+    """Clone a Git repository to the project's cloned_repos directory and return the path."""
     try:
         logger.info(f"Attempting to clone Git repository: {request.repo_url}")
         
-        # Create a temporary directory for the clone
-        temp_dir = tempfile.mkdtemp(prefix="deepwiki_git_clone_")
-        
-        # Parse the repo URL to get the repo name
-        repo_name = request.repo_url.split('/')[-1].replace('.git', '')
-        if repo_name == '':
-            repo_name = request.repo_url.split('/')[-2]
-        
-        clone_path = os.path.join(temp_dir, repo_name)
+        # Generate a unique clone path in the project directory
+        clone_path = generate_clone_path(request.repo_url)
+        logger.info(f"Clone path: {clone_path}")
         
         # Build the git clone command with authentication
         clone_cmd = ["git", "clone"]
         
-        # If authentication is provided, use it
-        if request.username and (request.password or request.auth_method == 'token'):
-            # Parse the URL to reconstruct with credentials
+        # Handle authentication based on method
+        if request.auth_method == 'token' and request.password:
+            # Token authentication - use token as password
             repo_url = request.repo_url
             if repo_url.startswith("https://"):
-                # Insert credentials in URL: https://username:password@domain.com/repo.git
+                domain_and_path = repo_url[8:]  # Remove "https://"
+                if request.username:
+                    # Username + token format: https://username:token@domain.com/repo.git
+                    repo_url = f"https://{request.username}:{request.password}@{domain_and_path}"
+                else:
+                    # Token only format: https://token@domain.com/repo.git
+                    repo_url = f"https://{request.password}@{domain_and_path}"
+                clone_cmd.extend([repo_url, clone_path])
+                logger.info(f"Using token authentication for Git clone")
+            else:
+                clone_cmd.extend([request.repo_url, clone_path])
+        elif request.username and request.password and request.auth_method == 'password':
+            # Username + password authentication
+            repo_url = request.repo_url
+            if repo_url.startswith("https://"):
                 domain_and_path = repo_url[8:]  # Remove "https://"
                 repo_url = f"https://{request.username}:{request.password}@{domain_and_path}"
                 clone_cmd.extend([repo_url, clone_path])
+                logger.info(f"Using username/password authentication for Git clone")
             else:
                 clone_cmd.extend([request.repo_url, clone_path])
         else:
+            # No authentication or auth_method == 'none'
             clone_cmd.extend([request.repo_url, clone_path])
+            logger.info(f"Using no authentication for Git clone")
         
         # Execute the git clone command
         result = subprocess.run(clone_cmd, capture_output=True, text=True, timeout=300)  # 5 minute timeout
         
         if result.returncode != 0:
             logger.error(f"Git clone failed: {result.stderr}")
-            # Clean up the temporary directory
+            # Clean up the failed clone directory
             import shutil
-            shutil.rmtree(temp_dir, ignore_errors=True)
+            if os.path.exists(clone_path):
+                shutil.rmtree(clone_path, ignore_errors=True)
             return JSONResponse(
                 status_code=400,
                 content={"error": f"Git clone failed: {result.stderr}"}
@@ -704,22 +745,23 @@ async def clone_git_repository(request: GitCloneRequest):
         logger.info(f"Successfully cloned repository to: {clone_path}")
         
         # Return the path to the cloned repository
-        return {"clone_path": clone_path, "temp_dir": temp_dir}
+        return {"clone_path": clone_path, "persistent": True}
         
     except subprocess.TimeoutExpired:
         logger.error("Git clone command timed out")
         import shutil
-        shutil.rmtree(temp_dir, ignore_errors=True) if 'temp_dir' in locals() else None
+        if 'clone_path' in locals() and os.path.exists(clone_path):
+            shutil.rmtree(clone_path, ignore_errors=True)
         return JSONResponse(
             status_code=408,
             content={"error": "Git clone timed out after 5 minutes"}
         )
     except Exception as e:
         logger.error(f"Error cloning Git repository: {str(e)}")
-        # Clean up the temporary directory if it was created
+        # Clean up the clone directory if it was created
         import shutil
-        if 'temp_dir' in locals():
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        if 'clone_path' in locals() and os.path.exists(clone_path):
+            shutil.rmtree(clone_path, ignore_errors=True)
         return JSONResponse(
             status_code=500,
             content={"error": f"Error cloning Git repository: {str(e)}"}
@@ -738,9 +780,8 @@ async def clone_git_repo_and_get_structure(request: GitCloneRequest):
             return clone_response
         
         clone_path = clone_response.get("clone_path")
-        temp_dir = clone_response.get("temp_dir")
         
-        if not clone_path or not temp_dir:
+        if not clone_path:
             return JSONResponse(
                 status_code=500,
                 content={"error": "Failed to get clone path from clone response"}
@@ -770,11 +811,15 @@ async def clone_git_repo_and_get_structure(request: GitCloneRequest):
         
         file_tree_str = '\n'.join(sorted(file_tree_lines))
         
-        # Clean up the temporary directory after getting structure
-        import shutil
-        shutil.rmtree(temp_dir, ignore_errors=True)
+        # Repository is now persistently stored in cloned_repos directory
+        logger.info(f"Repository structure extracted from: {clone_path}")
         
-        return {"file_tree": file_tree_str, "readme": readme_content, "temp_cleaned": True}
+        return {
+            "file_tree": file_tree_str, 
+            "readme": readme_content, 
+            "clone_path": clone_path,
+            "persistent": True
+        }
         
     except Exception as e:
         logger.error(f"Error in clone and get structure: {str(e)}")
