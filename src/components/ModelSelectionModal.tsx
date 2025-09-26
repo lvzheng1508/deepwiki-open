@@ -37,7 +37,7 @@ interface ModelSelectionModalProps {
 
   // Token input for refresh
   showTokenInput?: boolean;
-  repositoryType?: 'github' | 'gitlab' | 'bitbucket';
+  repositoryType?: 'github' | 'gitlab' | 'bitbucket' | 'web';
   // Authentication
   authRequired?: boolean;
   authCode?: string;
@@ -91,6 +91,7 @@ export default function ModelSelectionModal({
   setGitAuthMethod,
 }: ModelSelectionModalProps) {
   const { messages: t } = useLanguage();
+  
 
   // Local state for form values (to only apply changes when the user clicks "Submit")
   const [localProvider, setLocalProvider] = useState(provider);
@@ -105,8 +106,13 @@ export default function ModelSelectionModal({
   
   // Token input state
   const [localAccessToken, setLocalAccessToken] = useState('');
-  const [localSelectedPlatform, setLocalSelectedPlatform] = useState<'github' | 'gitlab' | 'bitbucket'>(repositoryType);
+  const [localSelectedPlatform, setLocalSelectedPlatform] = useState<'github' | 'gitlab' | 'bitbucket' | 'web'>(repositoryType || 'github');
   const [showTokenSection, setShowTokenSection] = useState(showTokenInput);
+  
+  // Git authentication local state
+  const [localGitUsername, setLocalGitUsername] = useState(gitUsername);
+  const [localGitPassword, setLocalGitPassword] = useState(gitPassword);
+  const [localGitAuthMethod, setLocalGitAuthMethod] = useState(gitAuthMethod);
 
   // Reset local state when modal is opened
   useEffect(() => {
@@ -123,8 +129,13 @@ export default function ModelSelectionModal({
       setLocalSelectedPlatform(repositoryType);
       setLocalAccessToken('');
       setShowTokenSection(showTokenInput);
+      
+      // Reset Git authentication local state
+      setLocalGitUsername(gitUsername);
+      setLocalGitPassword(gitPassword);
+      setLocalGitAuthMethod(gitAuthMethod);
     }
-  }, [isOpen, provider, model, isCustomModel, customModel, isComprehensiveView, excludedDirs, excludedFiles, includedDirs, includedFiles, repositoryType, showTokenInput]);
+  }, [isOpen, provider, model, isCustomModel, customModel, isComprehensiveView, excludedDirs, excludedFiles, includedDirs, includedFiles, repositoryType, showTokenInput, gitUsername, gitPassword, gitAuthMethod]);
 
   // Handler for applying changes
   const handleApply = () => {
@@ -137,6 +148,11 @@ export default function ModelSelectionModal({
     if (setExcludedFiles) setExcludedFiles(localExcludedFiles);
     if (setIncludedDirs) setIncludedDirs(localIncludedDirs);
     if (setIncludedFiles) setIncludedFiles(localIncludedFiles);
+    
+    // Apply Git authentication settings
+    if (setGitUsername) setGitUsername(localGitUsername);
+    if (setGitPassword) setGitPassword(localGitPassword);
+    if (setGitAuthMethod) setGitAuthMethod(localGitAuthMethod);
 
     // Pass token to onApply if needed
     if (showTokenInput) {
@@ -150,8 +166,8 @@ export default function ModelSelectionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4 text-center bg-black/50">
+    <div className="overflow-y-auto fixed inset-0 z-50">
+      <div className="flex justify-center items-center p-4 min-h-screen text-center bg-black/50">
         <div className="relative transform overflow-hidden rounded-lg bg-[var(--card-bg)] text-left shadow-xl transition-all sm:my-8 sm:max-w-lg sm:w-full">
           {/* Modal header with close button */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)]">
@@ -163,7 +179,7 @@ export default function ModelSelectionModal({
               onClick={onClose}
               className="text-[var(--muted)] hover:text-[var(--foreground)] focus:outline-none transition-colors"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -215,12 +231,12 @@ export default function ModelSelectionModal({
                   showTokenSection={showTokenSection}
                   onToggleTokenSection={() => setShowTokenSection(!showTokenSection)}
                   allowPlatformChange={false} // Don't allow platform change during refresh
-                  authMethod={gitAuthMethod}
-                  setAuthMethod={setGitAuthMethod}
-                  username={gitUsername}
-                  setUsername={setGitUsername}
-                  password={gitPassword}
-                  setPassword={setGitPassword}
+                  authMethod={localGitAuthMethod}
+                  setAuthMethod={setLocalGitAuthMethod}
+                  username={localGitUsername}
+                  setUsername={setLocalGitUsername}
+                  password={localGitPassword}
+                  setPassword={setLocalGitPassword}
                 />
               </>
             )}

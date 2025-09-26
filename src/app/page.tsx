@@ -134,7 +134,7 @@ export default function Home() {
   const [excludedFiles, setExcludedFiles] = useState('');
   const [includedDirs, setIncludedDirs] = useState('');
   const [includedFiles, setIncludedFiles] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'bitbucket'>('github');
+  const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'bitbucket' | 'web'>('github');
   const [accessToken, setAccessToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -295,7 +295,7 @@ export default function Home() {
   };
 
   const handleGenerateWiki = async () => {
-
+    console.log('handleGenerateWiki');
     // Check authorization code
     const validation = await validateAuthCode();
     if(!validation) {
@@ -353,14 +353,18 @@ export default function Home() {
     if (accessToken) {
       params.append('token', accessToken);
     }
-    // Add git authentication params for custom web platform
-    if (gitAuthMethod) {
+    
+    // Debug: Git authentication parameters
+    console.log('Git auth params:', { gitAuthMethod, gitUsername: gitUsername || 'empty', gitPassword: gitPassword ? '***' : 'empty' });
+  
+    // Add git authentication parameters for custom web platform
+    if (gitAuthMethod && gitAuthMethod !== 'token') {
       params.append('git_auth_method', gitAuthMethod);
     }
-    if (gitUsername) {
+    if (gitUsername && gitUsername.trim()) {
       params.append('git_username', gitUsername);
     }
-    if (gitPassword) {
+    if (gitPassword && gitPassword.trim()) {
       params.append('git_password', gitPassword);
     }
     // Always include the type parameter
@@ -491,6 +495,12 @@ export default function Home() {
             authCode={authCode}
             setAuthCode={setAuthCode}
             isAuthLoading={isAuthLoading}
+            authMethod={gitAuthMethod}
+            setAuthMethod={setGitAuthMethod}
+            username={gitUsername}
+            setUsername={setGitUsername}
+            password={gitPassword}
+            setPassword={setGitPassword}
           />
 
         </div>

@@ -35,6 +35,14 @@ export default function TokenInput({
   setPassword
 }: TokenInputProps) {
   const { messages: t } = useLanguage();
+  
+  // Debug: Log component render and props
+  // console.log('🔍 TokenInput rendered with props:', {
+  //   selectedPlatform,
+  //   authMethod,
+  //   username: username || 'none',
+  //   password: password ? '***' : 'none'
+  // });
 
   const platformName = selectedPlatform === 'web' ? 'Custom' : selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1);
 
@@ -120,7 +128,9 @@ export default function TokenInput({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAuthMethod?.('password')}
+                  onClick={() => {
+                    setAuthMethod?.('password');
+                  }}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md border transition-all ${authMethod === 'password'
                     ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)] text-[var(--accent-primary)] shadow-sm'
                     : 'border-[var(--border-color)] text-[var(--foreground)] hover:bg-[var(--background)]'
@@ -164,7 +174,10 @@ export default function TokenInput({
                   id="username"
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername?.(e.target.value)}
+                  onChange={(e) => {
+                    console.log('TokenInput: Username input changed to:', e.target.value);
+                    setUsername?.(e.target.value);
+                  }}
                   placeholder="Enter your username"
                   className="input-japanese block w-full px-3 py-2 rounded-md bg-transparent text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-primary)] text-sm"
                 />
@@ -177,11 +190,29 @@ export default function TokenInput({
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword?.(e.target.value)}
+                  onChange={(e) => {
+                    console.log('TokenInput: Password input changed');
+                    setPassword?.(e.target.value);
+                  }}
                   placeholder="Enter your password"
                   className="input-japanese block w-full px-3 py-2 rounded-md bg-transparent text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-primary)] text-sm"
                 />
               </div>
+              
+              {/* Git Auth Settings Display - now managed by modal state */}
+              {authMethod === 'password' && (
+                <div className="mt-4 p-3 bg-[var(--background)]/30 rounded-md border border-[var(--border-color)]">
+                  <div className="text-xs text-[var(--muted)] mb-2">Git Authentication Settings:</div>
+                  <div className="text-xs text-[var(--muted)] font-mono">
+                    Method: <span className="text-[var(--foreground)]">{authMethod}</span> | 
+                    User: <span className="text-[var(--foreground)]">{username || 'none'}</span> | 
+                    Pass: <span className="text-[var(--foreground)]">{password ? '***' : 'none'}</span>
+                  </div>
+                  <div className="text-xs text-[var(--muted)] mt-1">
+                    ℹ️ Settings will be applied when you click Submit
+                  </div>
+                </div>
+              )}
             </div>
           ) : selectedPlatform !== 'web' && (
             <div>

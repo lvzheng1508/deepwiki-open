@@ -221,6 +221,7 @@ export default function RepoWikiPage() {
   const gitUsernameParam = searchParams.get('git_username') || '';
   const gitPasswordParam = searchParams.get('git_password') || '';
 
+
   // Initialize repo info
   const repoInfo = useMemo<RepoInfo>(() => ({
     owner,
@@ -289,15 +290,19 @@ export default function RepoWikiPage() {
   const [authCode, setAuthCode] = useState<string>('');
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   
-  // Git clone authentication state - initialize from URL params if available
+  // Git clone authentication - use state that syncs with URL parameters
   const [gitAuthMethod, setGitAuthMethod] = useState<'token' | 'password' | 'none'>(gitAuthMethodParam || 'token');
   const [gitUsername, setGitUsername] = useState(gitUsernameParam || '');
   const [gitPassword, setGitPassword] = useState(gitPasswordParam || '');
 
-  // Add effect to log git auth state changes for debugging
+  // Sync URL parameters with component state
   useEffect(() => {
-    console.log('Git auth state updated:', { gitUsername, gitPassword, gitAuthMethod });
-  }, [gitUsername, gitPassword, gitAuthMethod]);
+    setGitAuthMethod(gitAuthMethodParam || 'token');
+    setGitUsername(gitUsernameParam || '');
+    setGitPassword(gitPasswordParam || '');
+  }, [gitAuthMethodParam, gitUsernameParam, gitPasswordParam]);
+
+
 
   // Default branch state
   const [defaultBranch, setDefaultBranch] = useState<string>('main');
@@ -1725,6 +1730,7 @@ IMPORTANT:
   // No longer needed as we use the modal directly
 
   const confirmRefresh = useCallback(async (newToken?: string) => {
+    
     setShowModelOptions(false);
     setLoadingMessage(messages.loading?.clearingCache || 'Clearing server cache...');
     setIsLoading(true); // Show loading indicator immediately
@@ -1742,6 +1748,18 @@ IMPORTANT:
         comprehensive: isComprehensiveView.toString(),
         authorization_code: authCode,
       });
+
+      // Add git authentication parameters from component state
+      
+      if (gitAuthMethod && gitAuthMethod !== 'token') {
+        params.append('git_auth_method', gitAuthMethod);
+      }
+      if (gitUsername && gitUsername.trim()) {
+        params.append('git_username', gitUsername);
+      }
+      if (gitPassword && gitPassword.trim()) {
+        params.append('git_password', gitPassword);
+      }
 
       // Add file filters configuration
       if (modelExcludedDirs) {
@@ -1800,6 +1818,31 @@ IMPORTANT:
       currentUrl.searchParams.set('token', newToken);
       window.history.replaceState({}, '', currentUrl.toString());
     }
+
+    // Update URL with git authentication parameters from component state
+    const currentUrl = new URL(window.location.href);
+    
+    // Update Git auth parameters in URL based on component state
+    if (gitAuthMethod && gitAuthMethod !== 'token') {
+      currentUrl.searchParams.set('git_auth_method', gitAuthMethod);
+    } else {
+      currentUrl.searchParams.delete('git_auth_method');
+    }
+    
+    if (gitUsername && gitUsername.trim()) {
+      currentUrl.searchParams.set('git_username', gitUsername);
+    } else {
+      currentUrl.searchParams.delete('git_username');
+    }
+    
+    if (gitPassword && gitPassword.trim()) {
+      currentUrl.searchParams.set('git_password', gitPassword);
+    } else {
+      currentUrl.searchParams.delete('git_password');
+    }
+    
+    // Update the browser URL
+    window.history.replaceState({}, '', currentUrl.toString());
 
     // Proceed with the rest of the refresh logic
     console.log('Refreshing wiki. Server cache will be overwritten upon new generation if not cleared.');
@@ -2436,7 +2479,7 @@ IMPORTANT:
         onApply={confirmRefresh}
         showWikiType={true}
         showTokenInput={effectiveRepoInfo.type !== 'local' && !currentToken} // Show token input if not local and no current token
-        repositoryType={effectiveRepoInfo.type as 'github' | 'gitlab' | 'bitbucket'}
+        repositoryType={effectiveRepoInfo.type as 'github' | 'gitlab' | 'bitbucket' | 'web'}
         authRequired={authRequired}
         authCode={authCode}
         setAuthCode={setAuthCode}

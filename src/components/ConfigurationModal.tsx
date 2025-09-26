@@ -66,6 +66,9 @@ interface ConfigurationModalProps {
   authCode?: string;
   setAuthCode?: (code: string) => void;
   isAuthLoading?: boolean;
+  
+  // Git authentication
+  onApplyGitAuth?: () => void;
 }
 
 export default function ConfigurationModal({
@@ -108,7 +111,8 @@ export default function ConfigurationModal({
   authRequired,
   authCode,
   setAuthCode,
-  isAuthLoading
+  isAuthLoading,
+  onApplyGitAuth
 }: ConfigurationModalProps) {
   const { messages: t } = useLanguage();
 
@@ -273,6 +277,7 @@ export default function ConfigurationModal({
               showTokenSection={showTokenSection}
               onToggleTokenSection={() => setShowTokenSection(!showTokenSection)}
               allowPlatformChange={true}
+              onApplyGitAuth={onApplyGitAuth}
             />
 
             {/* Authorization Code Input */}
