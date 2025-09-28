@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,9 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 import google.generativeai as genai
 import asyncio
+
+# Add the current directory to the path so we can import the api package
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Configure logging
 from api.logging_config import setup_logging
