@@ -116,6 +116,116 @@ yarn dev
 3. For private repositories, click "+ Add access tokens" and enter your GitHub or GitLab personal access token
 4. Click "Generate Wiki" and watch the magic happen!
 
+## 🛠️ Detailed Local Deployment Guide
+
+Here's a detailed guide for deploying and running DeepWiki in a local environment:
+
+### Environment Preparation
+
+1. Ensure Python 3.10+ and Node.js 16+ are installed on your system
+2. Ensure yarn package manager is installed
+
+### Detailed Deployment Steps
+
+#### 1. Clone the Project Code
+
+```bash
+git clone https://github.com/AsyncFuncAI/deepwiki-open.git
+cd deepwiki-open
+```
+
+#### 2. Create and Activate Python Virtual Environment
+
+```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate  # Linux/macOS
+# or
+.venv\Scripts\activate     # Windows
+```
+
+#### 3. Install Backend Dependencies
+
+```bash
+# Execute after entering the project root directory and activating the virtual environment
+pip install -r api/requirements.txt
+```
+
+#### 4. Configure Environment Variables
+
+Create a `.env` file in the project root directory and add the necessary API keys:
+
+```bash
+# Create .env file
+touch .env
+
+# Edit the file to add the following content (select as needed):
+GOOGLE_API_KEY=your_google_api_key
+OPENAI_API_KEY=your_openai_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+AZURE_OPENAI_API_KEY=your_azure_openai_api_key
+AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
+AZURE_OPENAI_VERSION=your_azure_openai_version
+OLLAMA_HOST=your_ollama_host
+```
+
+#### 5. Install Frontend Dependencies
+
+```bash
+# Ensure execution in the project root directory
+yarn install
+```
+
+#### 6. Start Services
+
+Both backend and frontend services need to be started simultaneously:
+
+```bash
+# Start the backend service in one terminal window
+source .venv/bin/activate
+python -m api.main
+
+# Start the frontend service in another terminal window
+yarn dev
+```
+
+#### 7. Access the Application
+
+- Frontend interface: http://localhost:3000
+- Backend API: http://localhost:8001
+
+### Verify Service Status
+
+You can verify that the services are running correctly with the following commands:
+
+```bash
+# Check frontend service
+curl -I http://localhost:3000
+
+# Check backend service
+curl -I http://localhost:8001
+```
+
+### Common Issues
+
+1. If you encounter port conflicts, you can modify the backend port:
+
+   ```bash
+   # Add to .env file
+   PORT=8002
+   ```
+
+2. If you encounter dependency installation issues, try:
+   ```bash
+   # Clean cache and reinstall
+   pip cache purge
+   yarn cache clean
+   pip install -r api/requirements.txt
+   yarn install
+   ```
+
 ## 🔍 How It Works
 
 DeepWiki uses AI to:

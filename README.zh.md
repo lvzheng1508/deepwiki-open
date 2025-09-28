@@ -2,12 +2,12 @@
 
 ![DeepWiki 横幅](screenshots/Deepwiki.png)
 
-**DeepWiki**可以为任何GitHub、GitLab或BitBucket代码仓库自动创建美观、交互式的Wiki！只需输入仓库名称，DeepWiki将：
+**DeepWiki**可以为任何 GitHub、GitLab 或 BitBucket 代码仓库自动创建美观、交互式的 Wiki！只需输入仓库名称，DeepWiki 将：
 
 1. 分析代码结构
 2. 生成全面的文档
 3. 创建可视化图表解释一切如何运作
-4. 将所有内容整理成易于导航的Wiki
+4. 将所有内容整理成易于导航的 Wiki
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/sheing)
 
@@ -18,18 +18,18 @@
 
 ## ✨ 特点
 
-- **即时文档**：几秒钟内将任何GitHub、GitLab或BitBucket仓库转换为Wiki
+- **即时文档**：几秒钟内将任何 GitHub、GitLab 或 BitBucket 仓库转换为 Wiki
 - **私有仓库支持**：使用个人访问令牌安全访问私有仓库
-- **智能分析**：AI驱动的代码结构和关系理解
-- **精美图表**：自动生成Mermaid图表可视化架构和数据流
-- **简易导航**：简单、直观的界面探索Wiki
-- **提问功能**：使用RAG驱动的AI与您的仓库聊天，获取准确答案
+- **智能分析**：AI 驱动的代码结构和关系理解
+- **精美图表**：自动生成 Mermaid 图表可视化架构和数据流
+- **简易导航**：简单、直观的界面探索 Wiki
+- **提问功能**：使用 RAG 驱动的 AI 与您的仓库聊天，获取准确答案
 - **深度研究**：多轮研究过程，彻底调查复杂主题
-- **多模型提供商**：支持Google Gemini、OpenAI、OpenRouter和本地Ollama模型
+- **多模型提供商**：支持 Google Gemini、OpenAI、OpenRouter 和本地 Ollama 模型
 
 ## 🚀 快速开始（超级简单！）
 
-### 选项1：使用Docker
+### 选项 1：使用 Docker
 
 ```bash
 # 克隆仓库
@@ -47,6 +47,7 @@ docker-compose up
 ```
 
 (上述 Docker 命令以及 `docker-compose.yml` 配置会挂载您主机上的 `~/.adalflow` 目录到容器内的 `/root/.adalflow`。此路径用于存储：
+
 - 克隆的仓库 (`~/.adalflow/repos/`)
 - 仓库的嵌入和索引 (`~/.adalflow/databases/`)
 - 缓存的已生成 Wiki 内容 (`~/.adalflow/wikicache/`)
@@ -54,12 +55,13 @@ docker-compose up
 这确保了即使容器停止或移除，您的数据也能持久保存。)
 
 > 💡 **获取这些密钥的地方：**
-> - 从[Google AI Studio](https://makersuite.google.com/app/apikey)获取Google API密钥
-> - 从[OpenAI Platform](https://platform.openai.com/api-keys)获取OpenAI API密钥
+>
+> - 从[Google AI Studio](https://makersuite.google.com/app/apikey)获取 Google API 密钥
+> - 从[OpenAI Platform](https://platform.openai.com/api-keys)获取 OpenAI API 密钥
 
-### 选项2：手动设置（推荐）
+### 选项 2：手动设置（推荐）
 
-#### 步骤1：设置API密钥
+#### 步骤 1：设置 API 密钥
 
 在项目根目录创建一个`.env`文件，包含以下密钥：
 
@@ -70,7 +72,7 @@ OPENAI_API_KEY=your_openai_api_key
 OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-#### 步骤2：启动后端
+#### 步骤 2：启动后端
 
 ```bash
 # 安装Python依赖
@@ -80,7 +82,7 @@ pip install -r api/requirements.txt
 python -m api.main
 ```
 
-#### 步骤3：启动前端
+#### 步骤 3：启动前端
 
 ```bash
 # 安装JavaScript依赖
@@ -94,22 +96,132 @@ npm run dev
 yarn dev
 ```
 
-#### 步骤4：使用DeepWiki！
+#### 步骤 4：使用 DeepWiki！
 
 1. 在浏览器中打开[http://localhost:3000](http://localhost:3000)
-2. 输入GitHub、GitLab或Bitbucket仓库（如`https://github.com/openai/codex`、`https://github.com/microsoft/autogen`、`https://gitlab.com/gitlab-org/gitlab`或`https://bitbucket.org/redradish/atlassian_app_versions`）
-3. 对于私有仓库，点击"+ 添加访问令牌"并输入您的GitHub或GitLab个人访问令牌
-4. 点击"生成Wiki"，见证奇迹的发生！
+2. 输入 GitHub、GitLab 或 Bitbucket 仓库（如`https://github.com/openai/codex`、`https://github.com/microsoft/autogen`、`https://gitlab.com/gitlab-org/gitlab`或`https://bitbucket.org/redradish/atlassian_app_versions`）
+3. 对于私有仓库，点击"+ 添加访问令牌"并输入您的 GitHub 或 GitLab 个人访问令牌
+4. 点击"生成 Wiki"，见证奇迹的发生！
+
+## 🛠️ 本地部署详细指南
+
+以下是在本地环境中部署和启动 DeepWiki 的详细步骤：
+
+### 环境准备
+
+1. 确保系统已安装 Python 3.10+ 和 Node.js 16+
+2. 确保已安装 yarn 包管理器
+
+### 详细部署步骤
+
+#### 1. 克隆项目代码
+
+```bash
+git clone https://github.com/AsyncFuncAI/deepwiki-open.git
+cd deepwiki-open
+```
+
+#### 2. 创建并激活 Python 虚拟环境
+
+```bash
+# 创建虚拟环境
+python3 -m venv .venv
+
+# 激活虚拟环境
+source .venv/bin/activate  # Linux/macOS
+# 或
+.venv\Scripts\activate     # Windows
+```
+
+#### 3. 安装后端依赖
+
+```bash
+# 进入项目根目录并激活虚拟环境后执行
+pip install -r api/requirements.txt
+```
+
+#### 4. 配置环境变量
+
+在项目根目录创建 `.env` 文件，添加必要的 API 密钥：
+
+```bash
+# 创建 .env 文件
+touch .env
+
+# 编辑文件添加以下内容（根据需要选择）：
+GOOGLE_API_KEY=your_google_api_key
+OPENAI_API_KEY=your_openai_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+AZURE_OPENAI_API_KEY=your_azure_openai_api_key
+AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
+AZURE_OPENAI_VERSION=your_azure_openai_version
+OLLAMA_HOST=your_ollama_host
+```
+
+#### 5. 安装前端依赖
+
+```bash
+# 确保在项目根目录执行
+yarn install
+```
+
+#### 6. 启动服务
+
+需要同时启动后端和前端服务：
+
+```bash
+# 在一个终端窗口中启动后端服务
+source .venv/bin/activate
+python -m api.main
+
+# 在另一个终端窗口中启动前端服务
+yarn dev
+```
+
+#### 7. 访问应用
+
+- 前端界面：http://localhost:3000
+- 后端 API：http://localhost:8001
+
+### 验证服务状态
+
+可以通过以下命令验证服务是否正常运行：
+
+```bash
+# 检查前端服务
+curl -I http://localhost:3000
+
+# 检查后端服务
+curl -I http://localhost:8001
+```
+
+### 常见问题
+
+1. 如果遇到端口冲突，可以修改后端端口：
+
+   ```bash
+   # 在 .env 文件中添加
+   PORT=8002
+   ```
+
+2. 如果遇到依赖安装问题，可以尝试：
+   ```bash
+   # 清理缓存后重新安装
+   pip cache purge
+   yarn cache clean
+   pip install -r api/requirements.txt
+   yarn install
+   ```
 
 ## 🔍 工作原理
 
-DeepWiki使用AI来：
+DeepWiki 使用 AI 来：
 
-1. 克隆并分析GitHub、GitLab或Bitbucket仓库（包括使用令牌认证的私有仓库）
+1. 克隆并分析 GitHub、GitLab 或 Bitbucket 仓库（包括使用令牌认证的私有仓库）
 2. 创建代码嵌入用于智能检索
-3. 使用上下文感知AI生成文档（使用Google Gemini、OpenAI、OpenRouter或本地Ollama模型）
+3. 使用上下文感知 AI 生成文档（使用 Google Gemini、OpenAI、OpenRouter 或本地 Ollama 模型）
 4. 创建可视化图表解释代码关系
-5. 将所有内容组织成结构化Wiki
+5. 将所有内容组织成结构化 Wiki
 6. 通过提问功能实现与仓库的智能问答
 7. 通过深度研究功能提供深入研究能力
 
@@ -178,7 +290,7 @@ deepwiki/
 提问功能允许您使用检索增强生成（RAG）与您的仓库聊天：
 
 - **上下文感知响应**：基于仓库中实际代码获取准确答案
-- **RAG驱动**：系统检索相关代码片段，提供有根据的响应
+- **RAG 驱动**：系统检索相关代码片段，提供有根据的响应
 - **实时流式传输**：实时查看生成的响应，获得更交互式的体验
 - **对话历史**：系统在问题之间保持上下文，实现更连贯的交互
 
@@ -188,7 +300,7 @@ deepwiki/
 
 - **深入调查**：通过多次研究迭代彻底探索复杂主题
 - **结构化过程**：遵循清晰的研究计划，包含更新和全面结论
-- **自动继续**：AI自动继续研究直到达成结论（最多5次迭代）
+- **自动继续**：AI 自动继续研究直到达成结论（最多 5 次迭代）
 - **研究阶段**：
   1. **研究计划**：概述方法和初步发现
   2. **研究更新**：在前一轮迭代基础上增加新见解
@@ -199,52 +311,57 @@ deepwiki/
 ## 📱 截图
 
 ![DeepWiki主界面](screenshots/Interface.png)
-*DeepWiki的主界面*
+_DeepWiki 的主界面_
 
 ![私有仓库支持](screenshots/privaterepo.png)
-*使用个人访问令牌访问私有仓库*
+_使用个人访问令牌访问私有仓库_
 
 ![深度研究功能](screenshots/DeepResearch.png)
-*深度研究为复杂主题进行多轮调查*
+_深度研究为复杂主题进行多轮调查_
 
 ### 演示视频
 
 [![DeepWiki演示视频](https://img.youtube.com/vi/zGANs8US8B4/0.jpg)](https://youtu.be/zGANs8US8B4)
 
-*观看DeepWiki实际操作！*
+_观看 DeepWiki 实际操作！_
 
 ## ❓ 故障排除
 
-### API密钥问题
-- **"缺少环境变量"**：确保您的`.env`文件位于项目根目录并包含所需的API密钥
-- **"API密钥无效"**：检查您是否正确复制了完整密钥，没有多余空格
-- **"OpenRouter API错误"**：验证您的OpenRouter API密钥有效且有足够的额度
+### API 密钥问题
+
+- **"缺少环境变量"**：确保您的`.env`文件位于项目根目录并包含所需的 API 密钥
+- **"API 密钥无效"**：检查您是否正确复制了完整密钥，没有多余空格
+- **"OpenRouter API 错误"**：验证您的 OpenRouter API 密钥有效且有足够的额度
 
 ### 连接问题
-- **"无法连接到API服务器"**：确保API服务器在端口8001上运行
-- **"CORS错误"**：API配置为允许所有来源，但如果您遇到问题，请尝试在同一台机器上运行前端和后端
+
+- **"无法连接到 API 服务器"**：确保 API 服务器在端口 8001 上运行
+- **"CORS 错误"**：API 配置为允许所有来源，但如果您遇到问题，请尝试在同一台机器上运行前端和后端
 
 ### 生成问题
-- **"生成Wiki时出错"**：对于非常大的仓库，请先尝试较小的仓库
-- **"无效的仓库格式"**：确保您使用有效的GitHub、GitLab或Bitbucket URL格式
+
+- **"生成 Wiki 时出错"**：对于非常大的仓库，请先尝试较小的仓库
+- **"无效的仓库格式"**：确保您使用有效的 GitHub、GitLab 或 Bitbucket URL 格式
 - **"无法获取仓库结构"**：对于私有仓库，确保您输入了具有适当权限的有效个人访问令牌
 - **"图表渲染错误"**：应用程序将自动尝试修复损坏的图表
 
 ### 常见解决方案
+
 1. **重启两个服务器**：有时简单的重启可以解决大多数问题
-2. **检查控制台日志**：打开浏览器开发者工具查看任何JavaScript错误
-3. **检查API日志**：查看运行API的终端中的Python错误
+2. **检查控制台日志**：打开浏览器开发者工具查看任何 JavaScript 错误
+3. **检查 API 日志**：查看运行 API 的终端中的 Python 错误
 
 ## 🤝 贡献
 
 欢迎贡献！随时：
-- 为bug或功能请求开issue
-- 提交pull request改进代码
+
+- 为 bug 或功能请求开 issue
+- 提交 pull request 改进代码
 - 分享您的反馈和想法
 
 ## 📄 许可证
 
-本项目根据MIT许可证授权 - 详情请参阅[LICENSE](LICENSE)文件。
+本项目根据 MIT 许可证授权 - 详情请参阅[LICENSE](LICENSE)文件。
 
 ## ⭐ 星标历史
 
@@ -297,7 +414,7 @@ OpenAI 客户端的 base_url 配置主要为拥有私有 API 渠道的企业用�
 
 ### 环境变量
 
-每个提供商需要其相应的API密钥环境变量：
+每个提供商需要其相应的 API 密钥环境变量：
 
 ```
 # API密钥
@@ -315,32 +432,35 @@ DEEPWIKI_CONFIG_DIR=/path/to/custom/config/dir  # 可选，用于自定义配置
 DEEPWIKI_AUTH_MODE=true  # 设置为 true 或 1 以启用授权模式
 DEEPWIKI_AUTH_CODE=your_secret_code # 当 DEEPWIKI_AUTH_MODE 启用时所需的授权码
 ```
-如果不使用ollama模式，那么需要配置OpenAI API密钥用于embeddings。其他密钥只有配置并使用使用对应提供商的模型时才需要。
+
+如果不使用 ollama 模式，那么需要配置 OpenAI API 密钥用于 embeddings。其他密钥只有配置并使用使用对应提供商的模型时才需要。
 
 ## 授权模式
 
 DeepWiki 可以配置为在授权模式下运行，在该模式下，生成 Wiki 需要有效的授权码。如果您想控制谁可以使用生成功能，这将非常有用。
-限制使用前端页面生成wiki并保护已生成页面的缓存删除，但无法完全阻止直接访问 API 端点生成wiki。主要目的是为了保护管理员已生成的wiki页面，防止被访问者重新生成。
+限制使用前端页面生成 wiki 并保护已生成页面的缓存删除，但无法完全阻止直接访问 API 端点生成 wiki。主要目的是为了保护管理员已生成的 wiki 页面，防止被访问者重新生成。
 
 要启用授权模式，请设置以下环境变量：
 
 - `DEEPWIKI_AUTH_MODE`: 将此设置为 `true` 或 `1`。启用后，前端将显示一个用于输入授权码的字段。
-- `DEEPWIKI_AUTH_CODE`: 将此设置为所需的密钥。限制使用前端页面生成wiki并保护已生成页面的缓存删除，但无法完全阻止直接访问 API 端点生成wiki。
+- `DEEPWIKI_AUTH_CODE`: 将此设置为所需的密钥。限制使用前端页面生成 wiki 并保护已生成页面的缓存删除，但无法完全阻止直接访问 API 端点生成 wiki。
 
 如果未设置 `DEEPWIKI_AUTH_MODE` 或将其设置为 `false`（或除 `true`/`1` 之外的任何其他值），则授权功能将被禁用，并且不需要任何代码。
 
 ### 配置文件
 
-DeepWiki使用JSON配置文件管理系统的各个方面：
+DeepWiki 使用 JSON 配置文件管理系统的各个方面：
 
 1. **`generator.json`**：文本生成模型配置
+
    - 定义可用的模型提供商（Google、OpenAI、OpenRouter、Ollama）
    - 指定每个提供商的默认和可用模型
-   - 包含特定模型的参数，如temperature和top_p
+   - 包含特定模型的参数，如 temperature 和 top_p
 
 2. **`embedder.json`**：嵌入模型和文本处理配置
+
    - 定义用于向量存储的嵌入模型
-   - 包含用于RAG的检索器配置
+   - 包含用于 RAG 的检索器配置
    - 指定文档分块的文本分割器设置
 
 3. **`repo.json`**：仓库处理配置
@@ -382,4 +502,3 @@ OpenAI 客户端的 base_url 配置主要为拥有私有 API 渠道的企业用�
 3. 程序会自动用环境变量的值替换 embedder.json 里的占位符。
 
 这样即可无缝切换到 OpenAI 兼容的 embedding 服务，无需修改代码。
-
