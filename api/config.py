@@ -19,6 +19,10 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL')
 OPENAI_MODEL = os.environ.get('OPENAI_MODEL')
 
+# Separate embedding configuration
+OPENAI_EMBED_KEY = os.environ.get('OPENAI_EMBED_KEY')
+OPENAI_EMBED_URL = os.environ.get('OPENAI_EMBED_URL')
+
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -35,6 +39,12 @@ if OPENAI_BASE_URL:
 if OPENAI_MODEL:
     # Used below to override default OpenAI model from generator config
     os.environ["OPENAI_MODEL"] = OPENAI_MODEL
+if OPENAI_EMBED_KEY:
+    # Used for embedding-specific API key
+    os.environ["OPENAI_EMBED_KEY"] = OPENAI_EMBED_KEY
+if OPENAI_EMBED_URL:
+    # Used for embedding-specific API endpoint
+    os.environ["OPENAI_EMBED_URL"] = OPENAI_EMBED_URL
 if GOOGLE_API_KEY:
     os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 if OPENROUTER_API_KEY:
@@ -306,6 +316,19 @@ def get_model_config(provider="google", model=None):
     Returns:
         dict: Configuration containing model_client, model and other parameters
     """
+    # Debug: Print LLM parameters for OpenAI provider
+    if provider == "openai":
+        logger.info("=== LLM Configuration Debug ===")
+        logger.info(f"Provider: {provider}")
+        logger.info(f"Requested model: {model}")
+        logger.info(f"OPENAI_API_KEY: {'***SET***' if OPENAI_API_KEY else 'NOT SET'}")
+        logger.info(f"OPENAI_BASE_URL: {OPENAI_BASE_URL or 'NOT SET'}")
+        logger.info(f"OPENAI_MODEL (env): {OPENAI_MODEL or 'NOT SET'}")
+        logger.info("--- Embedding Configuration ---")
+        logger.info(f"OPENAI_EMBED_KEY: {'***SET***' if OPENAI_EMBED_KEY else 'NOT SET'}")
+        logger.info(f"OPENAI_EMBED_URL: {OPENAI_EMBED_URL or 'NOT SET'}")
+        logger.info("==============================")
+    
     # Get provider configuration
     if "providers" not in configs:
         raise ValueError("Provider configuration not loaded")
@@ -323,8 +346,10 @@ def get_model_config(provider="google", model=None):
         # For OpenAI-compatible providers, allow environment override
         if provider == "openai" and os.environ.get("OPENAI_MODEL"):
             model = os.environ.get("OPENAI_MODEL")
+            logger.info(f"Using OPENAI_MODEL from environment: {model}")
         else:
             model = provider_config.get("default_model")
+            logger.info(f"Using default model from config: {model}")
             if not model:
                 raise ValueError(f"No default model specified for provider '{provider}'")
 

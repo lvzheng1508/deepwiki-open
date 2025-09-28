@@ -369,24 +369,39 @@ def prepare_data_pipeline(is_ollama_embedder: bool = None):
     if is_ollama_embedder is None:
         is_ollama_embedder = check_ollama()
 
+    logger.info("=== Data Pipeline Preparation Debug ===")
+    logger.info(f"Is Ollama embedder: {is_ollama_embedder}")
+    
     splitter = TextSplitter(**configs["text_splitter"])
     embedder_config = get_embedder_config()
+    
+    logger.info(f"Embedder config from get_embedder_config(): {embedder_config}")
 
     embedder = get_embedder()
+    
+    logger.info(f"Embedder instance: {embedder}")
 
     if is_ollama_embedder:
         # Use Ollama document processor for single-document processing
+        logger.info("Using Ollama document processor")
         embedder_transformer = OllamaDocumentProcessor(embedder=embedder)
     else:
         # Use batch processing for other embedders
         batch_size = embedder_config.get("batch_size", 500)
+        logger.info(f"Using ToEmbeddings with batch_size: {batch_size}")
         embedder_transformer = ToEmbeddings(
             embedder=embedder, batch_size=batch_size
         )
 
+    logger.info(f"Embedder transformer: {embedder_transformer}")
+    
     data_transformer = adal.Sequential(
         splitter, embedder_transformer
     )  # sequential will chain together splitter and embedder
+    
+    logger.info(f"Data transformer created: {data_transformer}")
+    logger.info("======================================")
+    
     return data_transformer
 
 def transform_documents_and_save_to_db(

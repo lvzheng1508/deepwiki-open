@@ -193,6 +193,16 @@ class OpenAIClient(ModelClient):
             raise ValueError(
                 f"Environment variable {self._env_api_key_name} must be set"
             )
+        
+        # Debug: Print OpenAI client initialization parameters
+        logger = logging.getLogger(__name__)
+        logger.info("=== OpenAI Client Initialization ===")
+        logger.info(f"API Key: {'***SET***' if api_key else 'NOT SET'}")
+        logger.info(f"Base URL: {self.base_url}")
+        logger.info(f"Env API Key Name: {self._env_api_key_name}")
+        logger.info(f"Env Base URL Name: {self._env_base_url_name}")
+        logger.info("===================================")
+        
         return OpenAI(api_key=api_key, base_url=self.base_url)
 
     def init_async_client(self):

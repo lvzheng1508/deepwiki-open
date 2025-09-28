@@ -144,7 +144,7 @@ export default function TokenInput({
 
           {selectedPlatform === 'web' && authMethod === 'token' ? (
             <div>
-              <label htmlFor="access-token" className="block text-xs font-medium text-[var(--foreground)] mb-2">
+              {/* <label htmlFor="access-token" className="block text-xs font-medium text-[var(--foreground)] mb-2">
                 {(t.form?.personalAccessToken || 'Personal Access Token').replace('{platform}', platformName)}
               </label>
               <input
@@ -162,7 +162,7 @@ export default function TokenInput({
                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {t.form?.tokenSecurityNote || 'Your token is stored locally and never sent to our servers.'}
-              </div>
+              </div> */}
             </div>
           ) : selectedPlatform === 'web' && authMethod === 'password' ? (
             <div className="space-y-3">

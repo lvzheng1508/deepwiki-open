@@ -472,6 +472,15 @@ This file contains...
             )
         elif request.provider == "openai":
             logger.info(f"Using Openai protocol with model: {request.model}")
+            
+            # Debug: Print detailed OpenAI configuration
+            logger.info("=== WebSocket OpenAI Debug ===")
+            logger.info(f"Request model: {request.model}")
+            logger.info(f"Model config: {model_config}")
+            logger.info(f"OPENAI_API_KEY: {'***SET***' if OPENAI_API_KEY else 'NOT SET'}")
+            logger.info(f"OPENAI_BASE_URL: {OPENAI_BASE_URL or 'NOT SET'}")
+            logger.info(f"OPENAI_MODEL (env): {OPENAI_MODEL or 'NOT SET'}")
+            logger.info("=============================")
 
             # Check if an API key is set for Openai
             if not OPENAI_API_KEY:
@@ -488,6 +497,8 @@ This file contains...
             # Only add top_p if it exists in the model config
             if "top_p" in model_config:
                 model_kwargs["top_p"] = model_config["top_p"]
+                
+            logger.info(f"Final model_kwargs: {model_kwargs}")
 
             api_kwargs = model.convert_inputs_to_api_kwargs(
                 input=prompt,
