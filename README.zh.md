@@ -149,13 +149,19 @@ pip install -r api/requirements.txt
 touch .env
 
 # 编辑文件添加以下内容（根据需要选择）：
-GOOGLE_API_KEY=your_google_api_key
-OPENAI_API_KEY=your_openai_api_key
-OPENROUTER_API_KEY=your_openrouter_api_key
-AZURE_OPENAI_API_KEY=your_azure_openai_api_key
-AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
-AZURE_OPENAI_VERSION=your_azure_openai_version
-OLLAMA_HOST=your_ollama_host
+GOOGLE_API_KEY=
+OPENAI_API_KEY=sk-74ba9abe37714101b50791f020c59b29
+OPENAI_BASE_URL=https://api.deepseek.com/v1
+OPENAI_MODEL=deepseek-chat
+OPENROUTER_API_KEY=
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_VERSION=
+OLLAMA_HOST=
+PORT=8001
+SERVER_BASE_URL=http://localhost:8001
+OPENAI_EMBED_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+OPENAI_EMBED_KEY=sk-fc3251d75cbb4530a13bb5b22682c603
 ```
 
 #### 5. 安装前端依赖
