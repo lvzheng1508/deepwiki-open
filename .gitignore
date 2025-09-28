@@ -68,4 +68,4 @@ next-env.d.ts
 certs/
 
 # ignore cloned repositories
-cloned_repos/
+cloned_repos/*

@@ -75,7 +75,7 @@ export default function Home() {
     return key;
   };
 
-  const [repositoryInput, setRepositoryInput] = useState('https://igit.58corp.com/zhuzhan/recommend/hgtp-rec.git');
+  const [repositoryInput, setRepositoryInput] = useState('https://igit.58corp.com/zhuzhan/demo/liuxin-wf-demo.git');
 
   const REPO_CONFIG_CACHE_KEY = 'deepwikiRepoConfigCache';
 
