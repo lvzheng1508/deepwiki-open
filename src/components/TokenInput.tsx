@@ -116,7 +116,7 @@ export default function TokenInput({
                 Authentication Method
               </label>
               <div className="flex gap-2">
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setAuthMethod?.('token')}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md border transition-all ${authMethod === 'token'
@@ -125,7 +125,7 @@ export default function TokenInput({
                     }`}
                 >
                   <span className="text-sm">Token</span>
-                </button>
+                </button> */}
                 <button
                   type="button"
                   onClick={() => {
