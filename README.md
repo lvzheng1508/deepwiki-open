@@ -146,6 +146,20 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate     # Windows
 ```
 
+**Important**: If your system has multiple Python versions, ensure you're using Python 3.10+:
+
+```bash
+# Check available Python versions
+python3 --version
+python3.10 --version
+python3.11 --version
+
+# If needed, create virtual environment with specific Python version
+python3.10 -m venv .venv
+# or use absolute path
+/usr/local/bin/python3.10 -m venv .venv
+```
+
 #### 3. Install Backend Dependencies
 
 ```bash
