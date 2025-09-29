@@ -212,6 +212,26 @@ curl -I http://localhost:3000
 
 # Check backend service
 curl -I http://localhost:8001
+
+# Check WebSocket service
+python3 -c "
+import asyncio
+import websockets
+
+async def test_websocket():
+    try:
+        async with websockets.connect('ws://localhost:8001/ws/chat') as websocket:
+            print('✅ WebSocket server is running correctly')
+    except Exception as e:
+        print(f'❌ WebSocket connection failed: {e}')
+
+asyncio.run(test_websocket())
+"
+```
+
+**Note**: The WebSocket test requires the `websockets` Python package. Install it with:
+```bash
+pip install websockets
 ```
 
 ### Common Issues
