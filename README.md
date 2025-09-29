@@ -586,8 +586,44 @@ The API server provides:
 - Repository cloning and indexing
 - RAG (Retrieval Augmented Generation)
 - Streaming chat completions
+- **WebSocket Support**: Real-time bidirectional communication for enhanced chat experiences
 
 For more details, see the [API README](./api/README.md).
+
+### WebSocket Communication
+
+DeepWiki uses WebSocket as the primary communication method between frontend and backend for chat interactions, providing:
+
+- **Real-time streaming responses**: See AI-generated content as it's produced
+- **Lower latency**: Direct connection without HTTP overhead
+- **Bidirectional communication**: Efficient two-way data exchange
+- **Automatic fallback**: Falls back to HTTP streaming if WebSocket connection fails
+
+The WebSocket endpoint is available at:
+- `ws://localhost:8001/ws/chat` (or your configured `SERVER_BASE_URL` with `ws://` protocol)
+
+When starting the API server with `python -m api.main`, both HTTP and WebSocket endpoints are automatically available on the same port.
+
+Environment Variables:
+- `SERVER_BASE_URL`: Base URL for the API server (default: http://localhost:8001) - also used for WebSocket connections
+- `PORT`: Port for the API server (default: 8001)
+
+Example WebSocket connection in browser:
+```javascript
+// Get the server base URL from environment or use default
+const SERVER_BASE_URL = process.env.SERVER_BASE_URL || 'http://localhost:8001';
+
+// Convert HTTP URL to WebSocket URL
+const getWebSocketUrl = () => {
+  const baseUrl = SERVER_BASE_URL;
+  // Replace http:// with ws:// or https:// with wss://
+  const wsBaseUrl = baseUrl.replace(/^http/, 'ws');
+  return `${wsBaseUrl}/ws/chat`;
+};
+
+// Create WebSocket connection
+const ws = new WebSocket(getWebSocketUrl());
+```
 
 ## 🔌 OpenRouter Integration
 
@@ -696,3 +732,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=AsyncFuncAI/deepwiki-open&type=Date)](https://star-history.com/#AsyncFuncAI/deepwiki-open&Date)
+
