@@ -508,3 +508,38 @@ OpenAI 客户端的 base_url 配置主要为拥有私有 API 渠道的企业用�
 3. 程序会自动用环境变量的值替换 embedder.json 里的占位符。
 
 这样即可无缝切换到 OpenAI 兼容的 embedding 服务，无需修改代码。
+
+### WebSocket通信
+
+DeepWiki在前端和后端之间的聊天交互中使用WebSocket作为主要通信方式，提供：
+
+- **实时流式响应**：在AI生成内容时即可看到
+- **更低的延迟**：直接连接而无HTTP开销
+- **双向通信**：高效的数据双向交换
+- **自动回退**：如果WebSocket连接失败，则回退到HTTP流式传输
+
+WebSocket端点位于：
+- `ws://localhost:8001/ws/chat`（或者您配置的带有`ws://`协议的`SERVER_BASE_URL`）
+
+当使用`python -m api.main`启动API服务器时，HTTP和WebSocket端点都会在同一个端口上自动可用。
+
+环境变量：
+- `SERVER_BASE_URL`：API服务器的基础URL（默认：http://localhost:8001）- 也用于WebSocket连接
+- `PORT`：API服务器的端口（默认：8001）
+
+浏览器中的WebSocket连接示例：
+```javascript
+// 从环境获取服务器基础URL或使用默认值
+const SERVER_BASE_URL = process.env.SERVER_BASE_URL || 'http://localhost:8001';
+
+// 将HTTP URL转换为WebSocket URL
+const getWebSocketUrl = () => {
+  const baseUrl = SERVER_BASE_URL;
+  // 将http://替换为ws://或将https://替换为wss://
+  const wsBaseUrl = baseUrl.replace(/^http/, 'ws');
+  return `${wsBaseUrl}/ws/chat`;
+};
+
+// 创建WebSocket连接
+const ws = new WebSocket(getWebSocketUrl());
+```
