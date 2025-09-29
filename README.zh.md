@@ -133,6 +133,20 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate     # Windows
 ```
 
+**重要**：如果您的系统有多个Python版本，请确保使用Python 3.10+：
+
+```bash
+# 检查可用的Python版本
+python3 --version
+python3.10 --version
+python3.11 --version
+
+# 如果需要，使用特定Python版本创建虚拟环境
+python3.10 -m venv .venv
+# 或使用绝对路径
+/usr/local/bin/python3.10 -m venv .venv
+```
+
 #### 3. 安装后端依赖
 
 ```bash
@@ -199,6 +213,26 @@ curl -I http://localhost:3000
 
 # 检查后端服务
 curl -I http://localhost:8001
+
+# 检查WebSocket服务
+python3 -c "
+import asyncio
+import websockets
+
+async def test_websocket():
+    try:
+        async with websockets.connect('ws://localhost:8001/ws/chat') as websocket:
+            print('✅ WebSocket服务器运行正常')
+    except Exception as e:
+        print(f'❌ WebSocket连接失败: {e}')
+
+asyncio.run(test_websocket())
+"
+```
+
+**注意**：WebSocket测试需要`websockets` Python包。使用以下命令安装：
+```bash
+pip install websockets
 ```
 
 ### 常见问题
