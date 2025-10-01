@@ -17,6 +17,7 @@ interface TokenInputProps {
   setUsername?: (value: string) => void;
   password?: string;
   setPassword?: (value: string) => void;
+  onApplyGitAuth?: () => void;
 }
 
 export default function TokenInput({
@@ -32,10 +33,11 @@ export default function TokenInput({
   username = '',
   setUsername,
   password = '',
-  setPassword
+  setPassword,
+  onApplyGitAuth
 }: TokenInputProps) {
   const { messages: t } = useLanguage();
-  
+
   // Debug: Log component render and props
   // console.log('🔍 TokenInput rendered with props:', {
   //   selectedPlatform,
@@ -198,14 +200,14 @@ export default function TokenInput({
                   className="input-japanese block w-full px-3 py-2 rounded-md bg-transparent text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-primary)] text-sm"
                 />
               </div>
-              
+
               {/* Git Auth Settings Display - now managed by modal state */}
               {authMethod === 'password' && (
                 <div className="mt-4 p-3 bg-[var(--background)]/30 rounded-md border border-[var(--border-color)]">
                   <div className="text-xs text-[var(--muted)] mb-2">Git Authentication Settings:</div>
                   <div className="text-xs text-[var(--muted)] font-mono">
-                    Method: <span className="text-[var(--foreground)]">{authMethod}</span> | 
-                    User: <span className="text-[var(--foreground)]">{username || 'none'}</span> | 
+                    Method: <span className="text-[var(--foreground)]">{authMethod}</span> |
+                    User: <span className="text-[var(--foreground)]">{username || 'none'}</span> |
                     Pass: <span className="text-[var(--foreground)]">{password ? '***' : 'none'}</span>
                   </div>
                   <div className="text-xs text-[var(--muted)] mt-1">

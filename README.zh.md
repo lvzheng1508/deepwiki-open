@@ -31,19 +31,42 @@
 
 ### 选项 1：使用 Docker
 
+#### 使用预构建镜像快速开始
+
 ```bash
 # 克隆仓库
 git clone https://github.com/AsyncFuncAI/deepwiki-open.git
 cd deepwiki-open
 
 # 创建包含API密钥的.env文件
-echo "GOOGLE_API_KEY=your_google_api_key" > .env
-echo "OPENAI_API_KEY=your_openai_api_key" >> .env
-# 可选：如果您想使用OpenRouter模型，添加OpenRouter API密钥
-echo "OPENROUTER_API_KEY=your_openrouter_api_key" >> .env
+cp env.example .env
+# 编辑 .env 文件并添加您的 API 密钥
 
 # 使用Docker Compose运行
 docker-compose up
+```
+
+#### 从源码构建
+
+如果您想要本地构建 Docker 镜像：
+
+```bash
+# 克隆仓库
+git clone https://github.com/AsyncFuncAI/deepwiki-open.git
+cd deepwiki-open
+
+# 构建 Docker 镜像
+./build.sh
+
+# 或者手动构建：
+# docker build -t deepwiki-open .
+
+# 创建包含API密钥的.env文件
+cp env.example .env
+# 编辑 .env 文件并添加您的 API 密钥
+
+# 使用Docker Compose运行
+docker-compose up -d
 ```
 
 (上述 Docker 命令以及 `docker-compose.yml` 配置会挂载您主机上的 `~/.adalflow` 目录到容器内的 `/root/.adalflow`。此路径用于存储：
@@ -474,6 +497,116 @@ DEEPWIKI_AUTH_CODE=your_secret_code # 当 DEEPWIKI_AUTH_MODE 启用时所需的�
 ```
 
 如果不使用 ollama 模式，那么需要配置 OpenAI API 密钥用于 embeddings。其他密钥只有配置并使用使用对应提供商的模型时才需要。
+
+### Docker 设置
+
+您可以使用 Docker 运行 DeepWiki：
+
+#### 运行容器
+
+```bash
+# 从 GitHub Container Registry 拉取镜像
+docker pull ghcr.io/asyncfuncai/deepwiki-open:latest
+
+# 使用环境变量运行容器
+docker run -p 8001:8001 -p 3000:3000 \
+  -e GOOGLE_API_KEY=your_google_api_key \
+  -e OPENAI_API_KEY=your_openai_api_key \
+  -e OPENROUTER_API_KEY=your_openrouter_api_key \
+  -e OLLAMA_HOST=your_ollama_host \
+  -e AZURE_OPENAI_API_KEY=your_azure_openai_api_key \
+  -e AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint \
+  -e AZURE_OPENAI_VERSION=your_azure_openai_version \
+
+  -v ~/.adalflow:/root/.adalflow \
+  ghcr.io/asyncfuncai/deepwiki-open:latest
+```
+
+此命令还会将您主机上的 `~/.adalflow` 挂载到容器中的 `/root/.adalflow`。此路径用于存储：
+
+- 克隆的仓库 (`~/.adalflow/repos/`)
+- 它们的嵌入和索引 (`~/.adalflow/databases/`)
+- 缓存的已生成 Wiki 内容 (`~/.adalflow/wikicache/`)
+
+这确保了即使容器停止或移除，您的数据也能持久保存。
+
+或者使用提供的 `docker-compose.yml` 文件：
+
+```bash
+# 首先使用您的 API 密钥编辑 .env 文件
+docker-compose up
+```
+
+（`docker-compose.yml` 文件预配置为挂载 `~/.adalflow` 以实现数据持久化，类似于上面的 `docker run` 命令。）
+
+#### 使用 .env 文件与 Docker
+
+您也可以将 .env 文件挂载到容器：
+
+```bash
+# 创建包含 API 密钥的 .env 文件
+echo "GOOGLE_API_KEY=your_google_api_key" > .env
+echo "OPENAI_API_KEY=your_openai_api_key" >> .env
+echo "OPENROUTER_API_KEY=your_openrouter_api_key" >> .env
+echo "AZURE_OPENAI_API_KEY=your_azure_openai_api_key" >> .env
+echo "AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint" >> .env
+echo "AZURE_OPENAI_VERSION=your_azure_openai_version"  >>.env
+echo "OLLAMA_HOST=your_ollama_host" >> .env
+
+# 使用挂载的 .env 文件运行容器
+docker run -p 8001:8001 -p 3000:3000 \
+  -v $(pwd)/.env:/app/.env \
+  -v ~/.adalflow:/root/.adalflow \
+  ghcr.io/asyncfuncai/deepwiki-open:latest
+```
+
+此命令还会将您主机上的 `~/.adalflow` 挂载到容器中的 `/root/.adalflow`。此路径用于存储：
+
+- 克隆的仓库 (`~/.adalflow/repos/`)
+- 它们的嵌入和索引 (`~/.adalflow/databases/`)
+- 缓存的已生成 Wiki 内容 (`~/.adalflow/wikicache/`)
+
+这确保了即使容器停止或移除，您的数据也能持久保存。
+
+#### 本地构建 Docker 镜像
+
+如果您想要本地构建 Docker 镜像：
+
+```bash
+# 克隆仓库
+git clone https://github.com/AsyncFuncAI/deepwiki-open.git
+cd deepwiki-open
+
+# 构建 Docker 镜像
+docker build -t deepwiki-open .
+
+# 运行容器
+docker run -p 8001:8001 -p 3000:3000 \
+  -e GOOGLE_API_KEY=your_google_api_key \
+  -e OPENAI_API_KEY=your_openai_api_key \
+  -e OPENROUTER_API_KEY=your_openrouter_api_key \
+  -e AZURE_OPENAI_API_KEY=your_azure_openai_api_key \
+  -e AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint \
+  -e AZURE_OPENAI_VERSION=your_azure_openai_version \
+  -e OLLAMA_HOST=your_ollama_host \
+  deepwiki-open
+```
+
+#### 在 Docker 中使用自签名证书
+
+如果您在需要使用自签名证书的环境中，可以在 Docker 构建中包含它们：
+
+1. 为您的证书创建一个目录（默认是项目根目录中的 `certs`）
+2. 将您的 `.crt` 或 `.pem` 证书文件复制到此目录
+3. 构建 Docker 镜像：
+
+```bash
+# 使用默认证书目录（certs）构建
+docker build .
+
+# 或使用自定义证书目录构建
+docker build --build-arg CUSTOM_CERT_DIR=my-custom-certs .
+```
 
 ## 授权模式
 

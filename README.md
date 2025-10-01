@@ -31,27 +31,42 @@
 
 ### Option 1: Using Docker
 
+#### Quick Start with Pre-built Image
+
 ```bash
 # Clone the repository
 git clone https://github.com/AsyncFuncAI/deepwiki-open.git
 cd deepwiki-open
 
 # Create a .env file with your API keys
-echo "GOOGLE_API_KEY=your_google_api_key" > .env
-echo "OPENAI_API_KEY=your_openai_api_key" >> .env
-# Optional: Use a third-party OpenAI-compatible endpoint and default model
-echo "OPENAI_BASE_URL=https://your-openai-compatible.example.com/v1" >> .env
-echo "OPENAI_MODEL=your_default_model_name" >> .env
-# Optional: Add OpenRouter API key if you want to use OpenRouter models
-echo "OPENROUTER_API_KEY=your_openrouter_api_key" >> .env
-# Optional: Add Ollama host if not local. defaults to http://localhost:11434
-echo "OLLAMA_HOST=your_ollama_host" >> .env
-# Optional: Add Azure API key, endpoint and version if you want to use azure openai models
-echo "AZURE_OPENAI_API_KEY=your_azure_openai_api_key" >> .env
-echo "AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint" >> .env
-echo "AZURE_OPENAI_VERSION=your_azure_openai_version" >> .env
+cp env.example .env
+# Edit .env file and add your API keys
+
 # Run with Docker Compose
 docker-compose up
+```
+
+#### Build from Source
+
+If you want to build the Docker image locally:
+
+```bash
+# Clone the repository
+git clone https://github.com/AsyncFuncAI/deepwiki-open.git
+cd deepwiki-open
+
+# Build the Docker image
+./build.sh
+
+# Or manually:
+# docker build -t deepwiki-open .
+
+# Create a .env file with your API keys
+cp env.example .env
+# Edit .env file and add your API keys
+
+# Run with Docker Compose
+docker-compose up -d
 ```
 
 For detailed instructions on using DeepWiki with Ollama and Docker, see [Ollama Instructions](Ollama-instruction.md).
