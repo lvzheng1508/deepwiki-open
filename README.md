@@ -103,11 +103,14 @@ OLLAMA_HOST=your_ollama_host
 #### Step 2: Start the Backend
 
 ```bash
-# Install Python dependencies
-pip install -r api/requirements.txt
+# Create virtual environment with Python 3.12+
+python3.12 -m venv .venv
 
-# Start the API server
-python -m api.main
+# Install Python dependencies
+.venv/bin/pip install -r api/requirements.txt
+
+# Start the API server (use virtual environment's Python directly)
+.venv/bin/python -m api.main
 ```
 
 #### Step 3: Start the Frontend
@@ -137,7 +140,7 @@ Here's a detailed guide for deploying and running DeepWiki in a local environmen
 
 ### Environment Preparation
 
-1. Ensure Python 3.10+ and Node.js 16+ are installed on your system
+1. Ensure Python 3.12+ and Node.js 16+ are installed on your system
 2. Ensure yarn package manager is installed
 
 ### Detailed Deployment Steps
@@ -152,8 +155,8 @@ cd deepwiki-open
 #### 2. Create and Activate Python Virtual Environment
 
 ```bash
-# Create virtual environment
-python3 -m venv .venv
+# Create virtual environment with Python 3.12+
+python3.12 -m venv .venv
 
 # Activate virtual environment
 source .venv/bin/activate  # Linux/macOS
@@ -161,24 +164,32 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate     # Windows
 ```
 
-**Important**: If your system has multiple Python versions, ensure you're using Python 3.10+:
+**Important**: This project requires Python 3.12 or higher. If your system has multiple Python versions:
 
 ```bash
 # Check available Python versions
 python3 --version
-python3.10 --version
-python3.11 --version
+python3.12 --version
 
-# If needed, create virtual environment with specific Python version
-python3.10 -m venv .venv
-# or use absolute path
-/usr/local/bin/python3.10 -m venv .venv
+# Find Python 3.12 location if needed
+which python3.12
+
+# Create virtual environment with specific Python 3.12+ version
+python3.12 -m venv .venv
+# or use absolute path if python3.12 is not in PATH
+/usr/local/bin/python3.12 -m venv .venv
+# or if using conda/anaconda
+/opt/anaconda3/bin/python3.12 -m venv .venv
 ```
 
 #### 3. Install Backend Dependencies
 
 ```bash
-# Execute after entering the project root directory and activating the virtual environment
+# Execute after entering the project root directory
+# Use virtual environment's pip directly to avoid any shell alias issues
+.venv/bin/pip install -r api/requirements.txt
+
+# Or if you've activated the virtual environment and confirmed it's using Python 3.12+
 pip install -r api/requirements.txt
 ```
 
@@ -219,12 +230,18 @@ Both backend and frontend services need to be started simultaneously:
 
 ```bash
 # Start the backend service in one terminal window
+# Use virtual environment's Python directly to avoid shell alias issues
+.venv/bin/python -m api.main
+
+# Or if you've activated the virtual environment and confirmed python points to Python 3.12+
 source .venv/bin/activate
 python -m api.main
 
 # Start the frontend service in another terminal window
 yarn dev
 ```
+
+**Note**: If you encounter `ModuleNotFoundError: No module named 'uvicorn'`, it means your shell's `python` command is not using the virtual environment's Python. Always use `.venv/bin/python` to ensure you're using the correct Python interpreter.
 
 #### 7. Access the Application
 

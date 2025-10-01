@@ -98,11 +98,14 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 #### 步骤 2：启动后端
 
 ```bash
-# 安装Python依赖
-pip install -r api/requirements.txt
+# 使用 Python 3.12+ 创建虚拟环境
+python3.12 -m venv .venv
 
-# 启动API服务器
-python -m api.main
+# 安装Python依赖
+.venv/bin/pip install -r api/requirements.txt
+
+# 启动API服务器（直接使用虚拟环境的 Python）
+.venv/bin/python -m api.main
 ```
 
 #### 步骤 3：启动前端
@@ -132,7 +135,7 @@ yarn dev
 
 ### 环境准备
 
-1. 确保系统已安装 Python 3.10+ 和 Node.js 16+
+1. 确保系统已安装 Python 3.12+ 和 Node.js 16+
 2. 确保已安装 yarn 包管理器
 
 ### 详细部署步骤
@@ -147,8 +150,8 @@ cd deepwiki-open
 #### 2. 创建并激活 Python 虚拟环境
 
 ```bash
-# 创建虚拟环境
-python3 -m venv .venv
+# 使用 Python 3.12+ 创建虚拟环境
+python3.12 -m venv .venv
 
 # 激活虚拟环境
 source .venv/bin/activate  # Linux/macOS
@@ -156,24 +159,32 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate     # Windows
 ```
 
-**重要**：如果您的系统有多个Python版本，请确保使用Python 3.10+：
+**重要**：本项目要求 Python 3.12 或更高版本。如果您的系统有多个Python版本：
 
 ```bash
 # 检查可用的Python版本
 python3 --version
-python3.10 --version
-python3.11 --version
+python3.12 --version
 
-# 如果需要，使用特定Python版本创建虚拟环境
-python3.10 -m venv .venv
-# 或使用绝对路径
-/usr/local/bin/python3.10 -m venv .venv
+# 如果需要，查找 Python 3.12 的位置
+which python3.12
+
+# 使用特定的 Python 3.12+ 版本创建虚拟环境
+python3.12 -m venv .venv
+# 或使用绝对路径（如果 python3.12 不在 PATH 中）
+/usr/local/bin/python3.12 -m venv .venv
+# 或者如果使用 conda/anaconda
+/opt/anaconda3/bin/python3.12 -m venv .venv
 ```
 
 #### 3. 安装后端依赖
 
 ```bash
-# 进入项目根目录并激活虚拟环境后执行
+# 进入项目根目录后执行
+# 直接使用虚拟环境的 pip，避免任何 shell alias 问题
+.venv/bin/pip install -r api/requirements.txt
+
+# 或者如果您已激活虚拟环境并确认使用的是 Python 3.12+
 pip install -r api/requirements.txt
 ```
 
@@ -214,12 +225,18 @@ yarn install
 
 ```bash
 # 在一个终端窗口中启动后端服务
+# 直接使用虚拟环境的 Python，避免 shell alias 问题
+.venv/bin/python -m api.main
+
+# 或者如果您已激活虚拟环境并确认 python 指向 Python 3.12+
 source .venv/bin/activate
 python -m api.main
 
 # 在另一个终端窗口中启动前端服务
 yarn dev
 ```
+
+**注意**：如果遇到 `ModuleNotFoundError: No module named 'uvicorn'` 错误，说明您的 shell 的 `python` 命令没有使用虚拟环境中的 Python。请始终使用 `.venv/bin/python` 来确保使用正确的 Python 解释器。
 
 #### 7. 访问应用
 

@@ -20,17 +20,17 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN NODE_ENV=production npm run build
 
-FROM python:3.11-slim AS py_deps
+FROM python:3.12-slim AS py_deps
 WORKDIR /app
 # Install uv for faster Python dependency management
 RUN pip install uv
 # Copy Python project files
 COPY pyproject.toml uv.lock ./
 # Install dependencies using uv
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen
 
-# Use Python 3.11 as final image
-FROM python:3.11-slim
+# Use Python 3.12 as final image
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
