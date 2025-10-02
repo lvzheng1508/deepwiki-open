@@ -28,6 +28,8 @@ RUN pip install uv
 COPY pyproject.toml uv.lock ./
 # Install dependencies using uv
 RUN uv sync --frozen
+# Manually install websockets to ensure WebSocket support
+RUN uv add websockets
 
 # Use Python 3.12 as final image
 FROM python:3.12-slim
